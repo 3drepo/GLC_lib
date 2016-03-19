@@ -95,6 +95,10 @@ public:
 	inline void setColor(const QColor& color)
 	{m_Color= color;}
 
+    //! Set this plane normal
+    inline void setNormal(const GLC_Vector3d& normal)
+    {m_Normal = normal;}
+
 	//! Set this plane opacity
 	inline void setOpacity(double opacity)
 	{m_Opacity= opacity;}
