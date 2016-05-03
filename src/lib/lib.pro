@@ -71,6 +71,16 @@ HEADERS_LIB3DS +=   3rdparty/lib3ds/atmosphere.h \
            
 HEADERS_GLEXT += 3rdparty/glext/glext.h
 
+HEADERS_CLIP2TR +=  3rdparty/clip2tri/clip2tri/clip2tri.h \
+                    3rdparty/clip2tri/clipper/clipper.hpp \
+                    3rdparty/clip2tri/poly2tri/common/shapes.h \
+                    3rdparty/clip2tri/poly2tri/common/utils.h \
+                    3rdparty/clip2tri/poly2tri/sweep/advancing_front.h \
+                    3rdparty/clip2tri/poly2tri/sweep/cdt.h \
+                    3rdparty/clip2tri/poly2tri/sweep/sweep.h \
+                    3rdparty/clip2tri/poly2tri/sweep/sweep_context.h \
+                    3rdparty/clip2tri/poly2tri/poly2tri.h
+
 HEADERS_GLC_MATHS += 	maths/glc_utils_maths.h \
                         maths/glc_vector2d.h \
                         maths/glc_vector2df.h \
@@ -134,7 +144,8 @@ HEADERS_GLC_GEOMETRY += geometry/glc_geometry.h \
                         geometry/glc_cone.h \
                         geometry/glc_sphere.h \
                         geometry/glc_pointcloud.h \
-                        geometry/glc_extrudedmesh.h
+                        geometry/glc_extrudedmesh.h \
+                        geometry/glc_text.h
 
 HEADERS_GLC_SHADING +=  shading/glc_material.h \
                         shading/glc_texture.h \
@@ -163,9 +174,11 @@ HEADERS_GLC_VIEWPORT +=	viewport/glc_camera.h \
                         viewport/glc_userinput.h \
                         viewport/glc_tsrmover.h \
                         viewport/glc_viewhandler.h \
+                        viewport/glc_openglviewhandler.h \
                         viewport/glc_inputeventinterpreter.h \
                         viewport/glc_defaulteventinterpreter.h \
-                        viewport/glc_screenshotsettings.h
+                        viewport/glc_screenshotsettings.h \
+                        viewport/glc_openglviewwidget.h
 
 HEADERS_GLC += glc_global.h \
                glc_object.h \
@@ -186,7 +199,8 @@ HEADERS_GLC += glc_global.h \
                glc_contextmanager.h \
                glc_contextshareddata.h \
                glc_uniformshaderdata.h \
-               glc_selectionevent.h
+               glc_selectionevent.h \
+               glc_renderstate.h
            
 HEADERS_GLC_3DWIDGET += 3DWidget/glc_3dwidget.h \
                         3DWidget/glc_cuttingplane.h \
@@ -195,6 +209,7 @@ HEADERS_GLC_3DWIDGET += 3DWidget/glc_3dwidget.h \
                         3DWidget/glc_abstractmanipulator.h \
                         3DWidget/glc_pullmanipulator.h \
                         3DWidget/glc_rotationmanipulator.h \
+                        3DWidget/glc_planemanipulator.h \
                         3DWidget/glc_axis.h
 
 HEADERS_GLC_GLU +=	glu/glc_glu.h
@@ -203,12 +218,13 @@ HEADERS_GLC_QML +=      qml/glc_quickitem.h \
                         qml/glc_quickview.h \
                         qml/glc_quickcamera.h \
                         qml/glc_quickoccurrence.h \
-                        qml/glc_quickselection.h
+                        qml/glc_quickselection.h \
+                        qml/glc_quickviewhandler.h
 
 HEADERS += $${HEADERS_QUAZIP} $${HEADERS_LIB3DS} $${HEADERS_GLC_MATHS} $${HEADERS_GLC_IO}
 HEADERS += $${HEADERS_GLC} $${HEADERS_GLEXT} $${HEADERS_GLC_SCENEGRAPH} $${HEADERS_GLC_GEOMETRY}
 HEADERS += $${HEADERS_GLC_SHADING} $${HEADERS_GLC_VIEWPORT} $${HEADERS_GLC_3DWIDGET} $${HEADERS_GLC_GLU}
-HEADERS += $${HEADERS_GLC_QML}
+HEADERS += $${HEADERS_GLC_QML} $${HEADERS_CLIP2TR}
 		   
 SOURCES += 3rdparty/zlib/adler32.c \
            3rdparty/zlib/compress.c \
@@ -255,6 +271,15 @@ SOURCES += 3rdparty/lib3ds/atmosphere.c \
            3rdparty/lib3ds/vector.c \
            3rdparty/lib3ds/viewport.c
    
+
+SOURCES += 3rdparty/clip2tri/clip2tri/clip2tri.cpp \
+            3rdparty/clip2tri/clipper/clipper.cpp \
+            3rdparty/clip2tri/poly2tri/common/shapes.cc \
+            3rdparty/clip2tri/poly2tri/sweep/advancing_front.cc \
+            3rdparty/clip2tri/poly2tri/sweep/cdt.cc \
+            3rdparty/clip2tri/poly2tri/sweep/sweep.cc \
+            3rdparty/clip2tri/poly2tri/sweep/sweep_context.cc
+
 SOURCES +=	maths/glc_matrix4x4.cpp \
                 maths/glc_vector4d.cpp \
                 maths/glc_interpolator.cpp \
@@ -310,7 +335,8 @@ SOURCES +=	geometry/glc_geometry.cpp \
                 geometry/glc_cone.cpp \
                 geometry/glc_sphere.cpp \
                 geometry/glc_pointcloud.cpp \
-                geometry/glc_extrudedmesh.cpp
+                geometry/glc_extrudedmesh.cpp \
+                geometry/glc_text.cpp
 
 
 SOURCES +=	shading/glc_material.cpp \
@@ -340,9 +366,11 @@ SOURCES +=	viewport/glc_camera.cpp \
                 viewport/glc_userinput.cpp \
                 viewport/glc_tsrmover.cpp \
                 viewport/glc_viewhandler.cpp \
+                viewport/glc_openglviewhandler.cpp \
                 viewport/glc_inputeventinterpreter.cpp \
                 viewport/glc_defaulteventinterpreter.cpp \
-                viewport/glc_screenshotsettings.cpp
+                viewport/glc_screenshotsettings.cpp \
+                viewport/glc_openglviewwidget.cpp
 
 		
 SOURCES +=	glc_global.cpp \
@@ -363,7 +391,8 @@ SOURCES +=	glc_global.cpp \
                 glc_contextmanager.cpp \
                 glc_contextshareddata.cpp \
                 glc_uniformshaderdata.cpp \
-                glc_selectionevent.cpp
+                glc_selectionevent.cpp \
+                glc_renderstate.cpp
 
 SOURCES +=	3DWidget/glc_3dwidget.cpp \
                 3DWidget/glc_cuttingplane.cpp \
@@ -372,6 +401,7 @@ SOURCES +=	3DWidget/glc_3dwidget.cpp \
                 3DWidget/glc_abstractmanipulator.cpp \
                 3DWidget/glc_pullmanipulator.cpp \
                 3DWidget/glc_rotationmanipulator.cpp \
+                3DWidget/glc_planemanipulator.cpp \
                 3DWidget/glc_axis.cpp
 			
 SOURCES +=	glu/glc_project.cpp
@@ -380,7 +410,8 @@ SOURCES +=      qml/glc_quickitem.cpp \
                 qml/glc_quickview.cpp \
                 qml/glc_quickcamera.cpp \
                 qml/glc_quickoccurrence.cpp \
-                qml/glc_quickselection.cpp
+                qml/glc_quickselection.cpp \
+                qml/glc_quickviewhandler.cpp
 
 # Windows compilation configuration
 win32:CONFIG *= dll
@@ -494,7 +525,13 @@ HEADERS_INST = GLC_BoundingBox \
                GLC_ScreenShotSettings \
                GLC_QuickView \
                GLC_QuickCamera \
-               GLC_QuickOccurrence
+               GLC_QuickOccurrence \
+               GLC_QuickViewHandler \
+               GLC_OpenGLViewHandler \
+               GLC_QuickSelection \
+               GLC_OpenGLViewWidget \
+               GLC_Text \
+               GLC_PlaneManipulator
 
 include (../../install.pri)
 
@@ -537,7 +574,6 @@ INSTALLS += include_glc_3dwidget include_glc_glu include_glc_qml
 INSTALLS += target
 INSTALLS += include
 
-OTHER_FILES += \
-    GLC_QuickSelection
+
 
 

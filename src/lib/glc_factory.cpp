@@ -23,6 +23,12 @@
 
 //! \file glc_factory.cpp implementation of the GLC_Factory class.
 
+
+#include <QColor>
+#include <QFont>
+
+#include "geometry/glc_disc.h"
+
 #include "glc_factory.h"
 #include "io/glc_fileloader.h"
 #include "io/glc_3dxmltoworld.h"
@@ -40,6 +46,8 @@
 #include "viewport/glc_tsrmover.h"
 #include "maths/glc_line3d.h"
 #include "maths/glc_geomtools.h"
+
+#include "geometry/glc_text.h"
 
 #include "glc_fileformatexception.h"
 
@@ -177,7 +185,19 @@ GLC_3DRep GLC_Factory::createSphere(double radius) const
 GLC_3DRep GLC_Factory::createRectangle(double l1, double l2)
 {
 	GLC_3DRep newRectangle(new GLC_Rectangle(l1, l2));
-	return newRectangle;
+    return newRectangle;
+}
+
+GLC_3DRep GLC_Factory::createDisc(double radius)
+{
+    GLC_3DRep subject(new GLC_Disc(radius));
+    return subject;
+}
+
+GLC_3DRep GLC_Factory::createText(const QString &text, const QColor& color, const QFont& font)
+{
+    GLC_3DRep subject(new GLC_Text(text, color, font));
+    return subject;
 }
 
 GLC_3DViewInstance GLC_Factory::createRectangle(const GLC_Point3d& point, const GLC_Vector3d& normal, double l1, double l2)
@@ -190,7 +210,20 @@ GLC_3DViewInstance GLC_Factory::createRectangle(const GLC_Point3d& point, const 
 	// Vector from origin to the plane
 	rectangleInstance.setMatrix(GLC_Matrix4x4(point) * rotationMatrix);
 
-	return rectangleInstance;
+    return rectangleInstance;
+}
+
+GLC_3DViewInstance GLC_Factory::createDisc(const GLC_Point3d &point, const GLC_Vector3d &normal, double radius)
+{
+    // Create the disc to (0,0) and  z normal
+    GLC_3DViewInstance subject(createDisc(radius));
+
+    // Create the plane rotation matrix
+    const GLC_Matrix4x4 rotationMatrix(glc::Z_AXIS, normal);
+    // Vector from origin to the plane
+    subject.setMatrix(GLC_Matrix4x4(point) * rotationMatrix);
+
+    return subject;
 }
 
 GLC_3DViewInstance GLC_Factory::createCuttingPlane(const GLC_Point3d& point, const GLC_Vector3d& normal, double l1, double l2, GLC_Material* pMat)

@@ -291,14 +291,14 @@ public:
 	{m_AutomaticCreationOf3DViewInstance= usage;}
 
 	//! Make this occurrence a flexible occurrence
-	void makeFlexible(const GLC_Matrix4x4& relativeMatrix);
+    void makeFlexible(const GLC_Matrix4x4& relativeMatrix, bool update= true);
 
 	//! Make this occurrence rigid
-	void makeRigid();
+    void makeRigid(bool update= true);
 
 	//! Exchange the occurrence at index position i with the occurrence at index position j
     /*! This function assumes that both i and j are at least 0 but less than childCount().*/
-	void swap(int i, int j);
+    void swap(int oldPos, int newPos);
 
 //@}
 
@@ -352,6 +352,7 @@ private:
 	//! The relative matrix of this occurrence if this occurrence is flexible
 	GLC_Matrix4x4* m_pRelativeMatrix;
 
+   Q_DISABLE_COPY(GLC_StructOccurrence)
 };
 
 #endif /* GLC_STRUCTOCCURRENCE_H_ */

@@ -26,8 +26,8 @@
 #define GLC_SHADER_H_
 
 #include "../glc_global.h"
-#include <QGLShader>
-#include <QGLShaderProgram>
+#include <QOpenGLShader>
+#include <QOpenGLShaderProgram>
 #include <QStack>
 #include <QFile>
 #include <QMutex>
@@ -87,7 +87,7 @@ public:
 	{return m_Name;}
 
 	//! Return an handle to the QGLProgramShader of this shader
-	inline QGLShaderProgram* programShaderHandle()
+    inline QOpenGLShaderProgram* programShaderHandle()
 	{return &m_ProgramShader;}
 
 	//! Return the position attribute id
@@ -202,10 +202,13 @@ public:
 	void replaceShader(const GLC_Shader&);
 
 	//! Assignement operator which use replace shader method
-	inline GLC_Shader& operator=(const GLC_Shader& shader)
+    inline GLC_Shader& operator=(const GLC_Shader& other)
 	{
-		replaceShader(shader);
-		return *this;
+        if (this != &other)
+        {
+            replaceShader(other);
+        }
+        return *this;
 	}
 
 	//! Set the Shader Name
@@ -259,13 +262,13 @@ private:
 	static QHash<GLC_uint, GLC_Shader*> m_ShaderProgramHash;
 
 	//! Vertex shader
-	QGLShader m_VertexShader;
+    QOpenGLShader m_VertexShader;
 
 	//! Fragment shader
-	QGLShader m_FragmentShader;
+    QOpenGLShader m_FragmentShader;
 
 	//! The programShader
-	QGLShaderProgram m_ProgramShader;
+    QOpenGLShaderProgram m_ProgramShader;
 
 	//! Programm shader ID
 	GLC_uint m_ProgramShaderId;

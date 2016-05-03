@@ -359,10 +359,6 @@ void GLC_ObjToWorld::changeGroup(QString line)
 // Extract a Vector from a string
 QList<float> GLC_ObjToWorld::extract3dVect(QString &line)
 {
-	float x=0.0f;
-	float y=0.0f;
-	float z=0.0f;
-
 	QList<float> vectResult;
 	QTextStream stringVecteur(&line);
 
@@ -371,9 +367,9 @@ QList<float> GLC_ObjToWorld::extract3dVect(QString &line)
 	if (((stringVecteur >> xString >> yString >> zString).status() == QTextStream::Ok))
 	{
 		bool xOk, yOk, zOk;
-		x= xString.toFloat(&xOk);
-		y= yString.toFloat(&yOk);
-		z= zString.toFloat(&zOk);
+        const float x= xString.toFloat(&xOk);
+        const float y= yString.toFloat(&yOk);
+        const float z= zString.toFloat(&zOk);
 		if (!(xOk && yOk && zOk))
 		{
 			QString message= "GLC_ObjToWorld::extract3dVect " + m_FileName + " failed to convert vector component to float";
@@ -394,14 +390,11 @@ QList<float> GLC_ObjToWorld::extract3dVect(QString &line)
 	}
 
 	return vectResult;
-
 }
 
 // Extract a Vector from a string
 QList<float> GLC_ObjToWorld::extract2dVect(QString &line)
 {
-	float x=0.0f;
-	float y=0.0f;
 	QList<float> vectResult;
 	QTextStream stringVecteur(&line);
 
@@ -410,8 +403,8 @@ QList<float> GLC_ObjToWorld::extract2dVect(QString &line)
 	if (((stringVecteur >> xString >> yString).status() == QTextStream::Ok))
 	{
 		bool xOk, yOk;
-		x= xString.toFloat(&xOk);
-		y= yString.toFloat(&yOk);
+        const float x= xString.toFloat(&xOk);
+        const float y= yString.toFloat(&yOk);
 		if (!(xOk && yOk))
 		{
 			QString message= "GLC_ObjToWorld::extract2dVect " + m_FileName + " failed to convert vector component to double";
@@ -436,6 +429,8 @@ void GLC_ObjToWorld::extractFaceIndex(QString &line)
 	int normalIndex;
 	int textureCoordinateIndex;
 
+    GLC_Vector3d polygonNormal;
+
 	QList<GLuint> currentFaceIndex;
 	//////////////////////////////////////////////////////////////////
 	// Parse the line containing face index
@@ -459,10 +454,14 @@ void GLC_ObjToWorld::extractFaceIndex(QString &line)
 			m_pCurrentObjMesh->m_Positions.append(m_Positions.value(coordinateIndex * 3 + 2));
 			if (-1 != normalIndex)
 			{
+                const double x= m_Normals.value(normalIndex * 3);
+                const double y= m_Normals.value(normalIndex * 3 + 1);
+                const double z= m_Normals.value(normalIndex * 3 + 2);
+                polygonNormal.setVect(x, y, z);
 				// Add Normal to the mesh bulk data
-				m_pCurrentObjMesh->m_Normals.append(m_Normals.value(normalIndex * 3));
-				m_pCurrentObjMesh->m_Normals.append(m_Normals.value(normalIndex * 3 + 1));
-				m_pCurrentObjMesh->m_Normals.append(m_Normals.value(normalIndex * 3 + 2));
+                m_pCurrentObjMesh->m_Normals.append(x);
+                m_pCurrentObjMesh->m_Normals.append(y);
+                m_pCurrentObjMesh->m_Normals.append(z);
 			}
 			else
 			{
@@ -510,7 +509,11 @@ void GLC_ObjToWorld::extractFaceIndex(QString &line)
 	{
 		if (size > 3)
 		{
-			glc::triangulatePolygon(&currentFaceIndex, m_pCurrentObjMesh->m_Positions);
+            GLC_Vector3d computedNormal= glc::triangulatePolygonClip2TRi(&currentFaceIndex, m_pCurrentObjMesh->m_Positions);
+            if (glc::compare(computedNormal.inverted(), polygonNormal))
+            {
+                currentFaceIndex= glc::reverseTriangleIndexWindingOrder(currentFaceIndex);
+            }
 		}
 		m_pCurrentObjMesh->m_Index.append(currentFaceIndex);
 	}
@@ -518,7 +521,7 @@ void GLC_ObjToWorld::extractFaceIndex(QString &line)
 	{
 		if (size > 3)
 		{
-			glc::triangulatePolygon(&currentFaceIndex, m_pCurrentObjMesh->m_Positions);
+            glc::triangulatePolygonClip2TRi(&currentFaceIndex, m_pCurrentObjMesh->m_Positions);
 		}
 		// Comput the face normal
 		if (currentFaceIndex.size() < 3) return;
@@ -826,25 +829,21 @@ GLC_Vector3df GLC_ObjToWorld::computeNormal(GLuint index1, GLuint index2, GLuint
 	xn= m_pCurrentObjMesh->m_Positions.at(index1 * 3);
 	yn= m_pCurrentObjMesh->m_Positions.at(index1 * 3 + 1);
 	zn= m_pCurrentObjMesh->m_Positions.at(index1 * 3 + 2);
-	const GLC_Vector3d vect1(xn, yn, zn);
+    const GLC_Point3d p1(xn, yn, zn);
 
 	// Vertex 2
 	xn= m_pCurrentObjMesh->m_Positions.at(index2 * 3);
 	yn= m_pCurrentObjMesh->m_Positions.at(index2 * 3 + 1);
 	zn= m_pCurrentObjMesh->m_Positions.at(index2 * 3 + 2);
-	const GLC_Vector3d vect2(xn, yn, zn);
+    const GLC_Point3d p2(xn, yn, zn);
 
 	// Vertex 3
 	xn= m_pCurrentObjMesh->m_Positions.at(index3 * 3);
 	yn= m_pCurrentObjMesh->m_Positions.at(index3 * 3 + 1);
 	zn= m_pCurrentObjMesh->m_Positions.at(index3 * 3 + 2);
-	const GLC_Vector3d vect3(xn, yn, zn);
+    const GLC_Point3d p3(xn, yn, zn);
 
-	const GLC_Vector3d edge1(vect3 - vect2);
-	const GLC_Vector3d edge2(vect1 - vect2);
-
-	GLC_Vector3d normal(edge1 ^ edge2);
-	normal.normalize();
+    GLC_Vector3d normal(glc::triangleNormal(p1, p2, p3));
 
 	return normal.toVector3df();
 }

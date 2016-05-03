@@ -938,25 +938,25 @@ void GLC_StructOccurrence::setReference(GLC_StructReference* pRef)
 	m_pStructInstance->setReference(pRef);
 }
 
-void GLC_StructOccurrence::makeFlexible(const GLC_Matrix4x4& relativeMatrix)
+void GLC_StructOccurrence::makeFlexible(const GLC_Matrix4x4& relativeMatrix, bool update)
 {
 	delete m_pRelativeMatrix;
 	m_pRelativeMatrix= new GLC_Matrix4x4(relativeMatrix);
 
-	updateChildrenAbsoluteMatrix();
+    if (update) updateChildrenAbsoluteMatrix();
 }
 
-void GLC_StructOccurrence::makeRigid()
+void GLC_StructOccurrence::makeRigid(bool update)
 {
 	delete m_pRelativeMatrix;
 	m_pRelativeMatrix= NULL;
 
-	updateChildrenAbsoluteMatrix();
+    if (update) updateChildrenAbsoluteMatrix();
 }
 
-void GLC_StructOccurrence::swap(int i, int j)
+void GLC_StructOccurrence::swap(int oldPos, int newPos)
 {
-	Q_ASSERT(i != j);
+    Q_ASSERT(oldPos != newPos);
 
 	GLC_StructReference* pRef= this->structReference();
     QList<GLC_StructOccurrence*> occurrences= pRef->listOfStructOccurrence();
@@ -964,11 +964,10 @@ void GLC_StructOccurrence::swap(int i, int j)
 	for (int i= 0; i < count; ++i)
 	{
         GLC_StructOccurrence* pOcc= occurrences.at(i);
-		Q_ASSERT(i <= pOcc->m_Childs.count());
-		Q_ASSERT(j <= pOcc->m_Childs.count());
-		pOcc->m_Childs.swap(i, j);
+        Q_ASSERT(oldPos <= pOcc->m_Childs.count());
+        Q_ASSERT(newPos <= pOcc->m_Childs.count());
+        pOcc->m_Childs.swap(oldPos, newPos);
 	}
-
 }
 
 //////////////////////////////////////////////////////////////////////

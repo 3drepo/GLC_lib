@@ -53,11 +53,9 @@ GLC_ViewHandler::GLC_ViewHandler(QObject *pParent)
     , m_CurrentSelectionSet()
     , m_UnprojectedPoint()
     , m_3DWidgetManager(m_pViewport)
-    , m_isRendering()
 
     , m_ScreenShotMode(false)
     , m_ScreenshotSettings()
-    , m_ScreenShotImage()
 
     , m_RenderFlag(glc::ShadingFlag)
 
@@ -82,19 +80,12 @@ GLC_ViewHandler::~GLC_ViewHandler()
     delete m_pInputEventInterpreter;
 }
 
-void GLC_ViewHandler::updateGL(bool synchrone)
+bool GLC_ViewHandler::spacePartitionningEnabled() const
 {
-    m_isRendering= synchrone;
-    emit isDirty();
-    while (m_Enabled && m_isRendering)
-    {
-        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-    }
-}
+    bool subject= false;
+    subject= this->world().collection()->spacePartitioningIsUsed();
 
-void GLC_ViewHandler::updateSynchronized()
-{
-    updateGL(true);
+    return subject;
 }
 
 void GLC_ViewHandler::clearSelectionBuffer()
@@ -152,6 +143,22 @@ void GLC_ViewHandler::setSamples(int samples)
     }
 }
 
+void GLC_ViewHandler::setSpacePartitionningEnabled(bool enabled)
+{
+    if (enabled != spacePartitionningEnabled())
+    {
+        if (enabled)
+        {
+            GLC_3DViewCollection* pCollection= this->world().collection();
+            this->setSpacePartitioning(new GLC_Octree(pCollection));
+        }
+        else
+        {
+            this->unSetSpacePartitionning();
+        }
+    }
+}
+
 void GLC_ViewHandler::setSpacePartitioning(GLC_SpacePartitioning *pSpacePartitioning)
 {
     m_pSpacePartitioning= pSpacePartitioning;
@@ -163,19 +170,6 @@ void GLC_ViewHandler::unSetSpacePartitionning()
 {
     m_pSpacePartitioning= NULL;
     m_World.collection()->unbindSpacePartitioning();
-}
-
-QPair<GLC_SelectionSet, GLC_Point3d> GLC_ViewHandler::selectAndUnproject(int x, int y, GLC_SelectionEvent::Modes modes)
-{
-    m_RenderingMode= GLC_ViewHandler::selectRenderMode;
-    m_PointerPosition.setX(x);
-    m_PointerPosition.setY(y);
-    m_CurrentSelectionSet.clear();
-    m_UnprojectedPoint.setVect(0.0, 0.0, 0.0);
-    m_SelectionModes= modes;
-    updateGL(true); // Execute OpenGL synchronously to get selection Set
-    QPair<GLC_SelectionSet, GLC_Point3d> subject(m_CurrentSelectionSet, m_UnprojectedPoint);
-    return subject;
 }
 
 void GLC_ViewHandler::unsetSelection()
@@ -195,18 +189,9 @@ void GLC_ViewHandler::selectionUpdated(const GLC_SelectionEvent &selectionEvent)
     updateGL();
 }
 
-QImage GLC_ViewHandler::takeScreenshot(const GLC_ScreenShotSettings &screenShotSettings)
+void GLC_ViewHandler::setSize(int width, int height, int devicePixelRatio)
 {
-    m_ScreenshotSettings= screenShotSettings;
-    m_ScreenShotMode= true;
-    updateGL(true);  // Execute OpenGL synchronously to get screenshot image
-    m_ScreenShotMode= false;
-    return m_ScreenShotImage;
-}
-
-void GLC_ViewHandler::setSize(int width, int height)
-{
-    m_pViewport->setWinGLSize(width, height);
+    m_pViewport->setWinGLSize(width, height, devicePixelRatio, true);
 }
 
 void GLC_ViewHandler::setMouseTracking(bool track)
@@ -226,11 +211,6 @@ void GLC_ViewHandler::setLight(GLC_Light *pLight)
     Q_ASSERT(NULL != pLight);
     delete m_pLight;
     m_pLight= pLight;
-}
-
-void GLC_ViewHandler::setScreenShotImage(const QImage &image)
-{
-    m_ScreenShotImage= image;
 }
 
 void GLC_ViewHandler::processMousePressEvent(QMouseEvent *pMouseEvent)

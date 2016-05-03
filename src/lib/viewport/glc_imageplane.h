@@ -25,6 +25,8 @@
 #ifndef GLC_IMAGEPLANE_H_
 #define GLC_IMAGEPLANE_H_
 
+#include <QSizeF>
+
 #include "../shading/glc_material.h"
 #include "../sceneGraph/glc_3dviewinstance.h"
 
@@ -45,13 +47,24 @@ class GLC_LIB_EXPORT GLC_ImagePlane
 //////////////////////////////////////////////////////////////////////
 public:
     //! Construct image plane from the given image file name
-	GLC_ImagePlane(const QString& ImageName);
+    GLC_ImagePlane(const QString& ImageName, bool ratioPreserved = true);
 
     //! Construct image plane from the given image
-	GLC_ImagePlane(const QImage& image);
+    GLC_ImagePlane(const QImage& image, bool ratioPreserved = true);
+
+    //! Copy constructor
+    GLC_ImagePlane(const GLC_ImagePlane& other);
 
 	~GLC_ImagePlane();
 //@}
+
+public:
+    bool rotioIsPreserved() const
+    {return m_RatioIsPreserved;}
+
+public:
+    void setRatioPreserved(bool preserved)
+    {m_RatioIsPreserved= preserved;}
 
 //////////////////////////////////////////////////////////////////////
 /*! \name OpenGL Functions*/
@@ -59,7 +72,7 @@ public:
 //////////////////////////////////////////////////////////////////////
 public:
 	//! Render this image plane
-	void render();
+    void render(double screenRatio);
 //@}
 
 //////////////////////////////////////////////////////////////////////
@@ -69,8 +82,12 @@ public:
 private:
 
 	//! The image representation
-	GLC_3DViewInstance m_Representation;
+    GLC_3DViewInstance* m_p3DViewInstance;
 
+    //! Used image size
+    QSizeF m_Size;
+
+    bool m_RatioIsPreserved;
 };
 
 #endif //GLC_IMAGEPLANE_H_

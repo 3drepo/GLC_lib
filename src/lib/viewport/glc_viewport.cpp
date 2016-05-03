@@ -438,13 +438,12 @@ QList<GLC_Point3d> GLC_Viewport::unproject(const QList<int>& list, GLenum buffer
     return unprojectedPoints;
 }
 
-void GLC_Viewport::renderText(const GLC_Point3d& point, const QString &text, const QColor &color, const QFont &font)
+void GLC_Viewport::renderText(const GLC_Point3d& point, const QString &text, const QColor &color, const QFont &font, int deviceRatio)
 {
     m_TextRenderingCollection.clear();
     if (!text.isEmpty())
     {
         QFontMetrics fontMetrics(font);
-        const double width= fontMetrics.width(text);
         const double height= fontMetrics.height();
 
         // Compute the ratio betwwen screen and world
@@ -454,39 +453,18 @@ void GLC_Viewport::renderText(const GLC_Point3d& point, const QString &text, con
         const GLC_Vector2d projectedPoint2(project((point + vector), false));
         const double ratio= height / (projectedPoint2 - projectedPoint1).length();
 
-        QPixmap pixmap(width, height);
-        pixmap.fill(Qt::transparent);
-        QPainter painter;
+        GLC_3DViewInstance textInstance= GLC_Factory::instance()->createText(text, color, font);
 
-        painter.begin(&pixmap);
-        painter.setRenderHints(QPainter::HighQualityAntialiasing | QPainter::TextAntialiasing);
-        painter.setFont(font);
-        painter.setPen(color);
-        painter.drawText(0, fontMetrics.ascent(), text);
-        painter.end();
+        GLC_Matrix4x4 matrix;
+        matrix.setMatScaling(ratio * deviceRatio, ratio * deviceRatio, ratio * deviceRatio);
+        matrix= GLC_Matrix4x4(point) * invertedViewMatrix * matrix;
+        textInstance.setMatrix(matrix);
+        m_TextRenderingCollection.add(textInstance);
 
-        QImage image= pixmap.toImage();
-
-        GLC_Texture *pTexture= new GLC_Texture(image);
-        GLC_Material* pMaterial= new GLC_Material(Qt::black);
-        pMaterial->setTexture(pTexture);
-        pMaterial->setOpacity(0.99);
-
-        GLC_3DViewInstance rectangle= GLC_Factory::instance()->createRectangle(width, height);
-
-        GLC_Matrix4x4 scaleMatrix;
-        scaleMatrix.setMatScaling(ratio, ratio, ratio);
-        rectangle.setMatrix(scaleMatrix);
-        rectangle.multMatrix(invertedViewMatrix);
-        rectangle.multMatrix(GLC_Matrix4x4(point));
-        rectangle.geomAt(0)->addMaterial(pMaterial);
-        m_TextRenderingCollection.add(rectangle);
-
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
         glDisable(GL_DEPTH_TEST);
         m_TextRenderingCollection.render(0, glc::TransparentRenderFlag);
         glEnable(GL_DEPTH_TEST);
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
         m_TextRenderingCollection.clear();
     }
 }
@@ -501,21 +479,18 @@ void GLC_Viewport::renderImagePlane()
 	{
 		if (m_pImagePlane != NULL)
 		{
-			m_pImagePlane->render();
-		}
+            m_pImagePlane->render(m_Width/m_Height);
+        }
 	}
 }
 
 void GLC_Viewport::render3DWidget()
 {
 	m_3DWidgetCollection.render(0, glc::WireRenderFlag);
-	m_3DWidgetCollection.render(0, glc::TransparentRenderFlag);
+    m_3DWidgetCollection.render(0, glc::TransparentRenderFlag);
 }
-//////////////////////////////////////////////////////////////////////
-// Set Functions
-//////////////////////////////////////////////////////////////////////
 
-void GLC_Viewport::setWinGLSize(int width, int height, bool updateOpenGL)
+void GLC_Viewport::setWinGLSize(int width, int height, int devicePixelRatio, bool updateOpenGL)
 {
     m_Width= width;
     m_Height= height;
@@ -531,9 +506,19 @@ void GLC_Viewport::setWinGLSize(int width, int height, bool updateOpenGL)
 
     if (updateOpenGL)
     {
-        glViewport(0,0,m_Width,m_Height);
+        glViewport(0, 0, m_Width * devicePixelRatio, m_Height * devicePixelRatio);
         updateProjectionMat();
     }
+
+}
+//////////////////////////////////////////////////////////////////////
+// Set Functions
+//////////////////////////////////////////////////////////////////////
+
+void GLC_Viewport::setWinGLSize(int width, int height, bool updateOpenGL)
+{
+    const int devicePixelRatio= 1;
+    setWinGLSize(width, height, devicePixelRatio, updateOpenGL);
 }
 
 void GLC_Viewport::setWinGLSize(const QSize &size, bool updateOpenGL)
@@ -561,7 +546,6 @@ GLC_uint GLC_Viewport::selectOnPreviousRender(int x, int y, GLenum buffer)
     GLint newY= (m_Height - y) - height / 2;
 	if (newX < 0) newX= 0;
 	if (newY < 0) newY= 0;
-
     return meaningfullIdInsideSquare(newX, newY, width, height, buffer);
 }
 GLC_uint GLC_Viewport::selectBody(GLC_3DViewInstance* pInstance, int x, int y, GLenum buffer)

@@ -76,6 +76,7 @@ GLC_3dxmlToWorld::GLC_3dxmlToWorld()
 , m_ByteArrayList()
 , m_IsVersion3(false)
 , m_UseZipMutex(true)
+, m_productGroupRootId(1)
 {
 
 }
@@ -227,11 +228,9 @@ GLC_3DRep GLC_3dxmlToWorld::create3DrepFrom3dxmlRep(const QString& fileName, boo
 			if (setStreamReaderToFile(m_CurrentFileName, true))
 			{
 				GLC_StructReference* pStructRef = createReferenceRep(QString(), NULL);
-				GLC_3DRep* pRep = NULL;
 				if ((NULL != pStructRef) && pStructRef->hasRepresentation())
 				{
-					pRep= dynamic_cast<GLC_3DRep*> (pStructRef->representationHandle());
-
+                    GLC_3DRep* pRep= dynamic_cast<GLC_3DRep*> (pStructRef->representationHandle());
 					if (NULL != pRep)
 					{
 						resultRep = GLC_3DRep(*pRep);
@@ -394,7 +393,7 @@ void GLC_3dxmlToWorld::loadProductStructure()
 		clear();
 		throw(fileFormatException);
 	}
-
+	m_productGroupRootId = readAttribute("root", true).toUInt();
 	// Load the structure
 	while(endElementNotReached(m_pStreamReader, "ProductStructure"))
 	{
@@ -598,7 +597,9 @@ void GLC_3dxmlToWorld::loadReference3D()
 	const QString refName(readAttribute("name", true));
 	GLC_StructReference* pStructReference;
 
-	if (id == 1) // This is the root reference.
+
+	//if (id == 1) // This is the root reference.
+	if (id == m_productGroupRootId) // This is the root reference.
 	{
 		m_pWorld->setRootName(refName);
 		pStructReference= m_pWorld->rootOccurrence()->structInstance()->structReference();
@@ -1130,7 +1131,8 @@ void GLC_3dxmlToWorld::createUnfoldedTree()
 	ReferenceHash::const_iterator iRef= m_ReferenceHash.constBegin();
 	while (m_ReferenceHash.constEnd() != iRef)
 	{
-		if (iRef.key() != 1)
+//		if (iRef.key() != 1)
+		if (iRef.key() != m_productGroupRootId)
 		{
 			GLC_StructReference* pReference= iRef.value();
 			if (!pReference->hasStructInstance())

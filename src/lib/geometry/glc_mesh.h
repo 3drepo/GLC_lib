@@ -315,6 +315,10 @@ protected:
 	/*! This Virtual function is implemented here.*/
 	virtual void glDraw(const GLC_RenderProperties&);
 
+    void setClientState();
+    void restoreClientState(GLC_Context *pContext);
+    void drawMeshWire(const GLC_RenderProperties &renderProperties, GLC_Context *pContext);
+
 //@}
 
 //////////////////////////////////////////////////////////////////////
@@ -1131,7 +1135,7 @@ void GLC_Mesh::activateVertexArray()
 	}
 
 	// Activate Color array if needed
-	if ((m_ColorPearVertex && !m_IsSelected && !GLC_State::isInSelectionMode()) && !m_MeshData.colorVectorHandle()->isEmpty())
+    if ((m_ColorPearVertex && !m_IsSelected && !GLC_State::isInSelectionMode()) && !m_MeshData.colorVectorHandle()->isEmpty())
 	{
         pContext->glcEnableColorMaterial(true);
 		glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);

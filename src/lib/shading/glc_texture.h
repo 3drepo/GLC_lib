@@ -96,13 +96,17 @@ public:
 	//! Return true if texture are the same
 	bool operator==(const GLC_Texture&) const;
 
+    //! Return false if texture are the same
+    bool operator!=(const GLC_Texture& other) const
+    {return !this->operator ==(other);}
+
 	//! Return true if the texture has alpha channel
 	inline bool hasAlphaChannel() const
 	{ return m_HasAlphaChannel;}
 
 	//! Return the an image of the texture
 	inline QImage imageOfTexture() const
-	{ return m_textureImage;}
+    { return m_TextureImage;}
 
 
 //@}
@@ -149,7 +153,7 @@ private:
 	QString m_FileName;
 
 	//! QImage off the texture
-	QImage m_textureImage;
+    QImage m_TextureImage;
 
 	//! Size of the texture
 	QSize m_TextureSize;

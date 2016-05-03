@@ -60,7 +60,6 @@ public:
     virtual ~GLC_ViewHandler();
 
 signals :
-    void isDirty();
     void invalidateSelectionBuffer();
     void acceptHoverEvent(bool track);
     void selectionChanged();
@@ -117,14 +116,13 @@ public:
     inline bool screenShotModeIsOn() const
     {return m_ScreenShotMode;}
 
-    inline QImage screenShotImage() const
-    {return m_ScreenShotImage;}
-
     inline const GLC_ScreenShotSettings& screenShotSettings() const
     {return m_ScreenshotSettings;}
 
     inline glc::RenderFlag currentRenderFlag() const
     {return m_RenderFlag;}
+
+    bool spacePartitionningEnabled() const;
 //@}
 
 //////////////////////////////////////////////////////////////////////
@@ -133,11 +131,13 @@ public:
 //////////////////////////////////////////////////////////////////////
 
 public slots:
-    virtual void updateGL(bool synchrone= false);
-    void updateSynchronized();
+    virtual void updateGL(bool synchrone= false)= 0;
+
     virtual void clearSelectionBuffer();
 
 public:
+    virtual void renderingFinished(){}
+
     virtual void setDefaultUpVector(const GLC_Vector3d &vect);
 
     void setInputEventInterpreter(GLC_InputEventInterpreter* pEventInterpreter);
@@ -146,19 +146,19 @@ public:
 
     void setSamples(int samples);
 
+    void setSpacePartitionningEnabled(bool enabled);
+
     void setSpacePartitioning(GLC_SpacePartitioning* pSpacePartitioning);
 
     void unSetSpacePartitionning();
 
-    virtual QPair<GLC_SelectionSet, GLC_Point3d> selectAndUnproject(int x, int y, GLC_SelectionEvent::Modes modes);
+    virtual QPair<GLC_SelectionSet, GLC_Point3d> selectAndUnproject(int x, int y, GLC_SelectionEvent::Modes modes)= 0;
 
     virtual void unsetSelection();
 
     virtual void selectionUpdated(const GLC_SelectionEvent &selectionEvent);
 
-    virtual QImage takeScreenshot(const GLC_ScreenShotSettings& screenShotSettings);
-
-    virtual void setSize(int width, int height);
+    virtual void setSize(int width, int height, int devicePixelRatio= 1);
 
     virtual void setMouseTracking(bool track);
 
@@ -168,8 +168,6 @@ public:
     {m_Enabled= enabled;}
 
     void setLight(GLC_Light* pLight);
-
-    void setScreenShotImage(const QImage& image);
 
     inline void setCurrentRenderFlag(glc::RenderFlag renderFlag)
     {m_RenderFlag= renderFlag;}
@@ -192,9 +190,6 @@ public:
 
     virtual void processTouchEvent(QTouchEvent* pTouchEvent);
     virtual void processHoverMoveEvent(QHoverEvent* pHoverEvent);
-
-    inline void renderingFinished()
-    {m_isRendering= false;}
 
 //@}
 
@@ -232,11 +227,9 @@ protected:
     GLC_SelectionSet m_CurrentSelectionSet;
     GLC_Point3d m_UnprojectedPoint;
     GLC_3DWidgetManager m_3DWidgetManager;
-    bool m_isRendering;
 
     bool m_ScreenShotMode;
     GLC_ScreenShotSettings m_ScreenshotSettings;
-    QImage m_ScreenShotImage;
 
     glc::RenderFlag m_RenderFlag;
 

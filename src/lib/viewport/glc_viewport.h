@@ -24,7 +24,6 @@
 
 #ifndef GLC_VIEWPORT_H_
 #define GLC_VIEWPORT_H_
-#include <QGLWidget>
 #include <QPair>
 #include <QHash>
 #include <QObject>
@@ -214,7 +213,7 @@ public:
 
     //! Render the given string into the current OpenGL context
     /*! x and y are specified in window coordinates*/
-    void renderText(const GLC_Point3d &point, const QString& text, const QColor& color= Qt::white, const QFont& font= QFont());
+    void renderText(const GLC_Point3d &point, const QString& text, const QColor& color= Qt::white, const QFont& font= QFont(), int deviceRatio= 1);
 
 //@}
 
@@ -239,6 +238,9 @@ public:
 //@{
 //////////////////////////////////////////////////////////////////////
 public:
+
+    //! Update the OpenGL view size
+    void setWinGLSize(int width, int height, int devicePixelRatio, bool updateOpenGL= true);
 
     //! Update the OpenGL view size
     void setWinGLSize(int width, int height, bool updateOpenGL= true);
