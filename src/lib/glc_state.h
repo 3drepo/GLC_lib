@@ -71,6 +71,9 @@ public:
 	//! Return true if is in selection mode
 	static bool isInSelectionMode();
 
+    //! Return true if is rendering material in selection mode
+    static bool useCustomFalseColor();
+
 	//! Return the Opengl version
 	static QString version();
 
@@ -131,6 +134,9 @@ public:
 	//! Set selection mode
 	static void setSelectionMode(const bool);
 
+    //! Set custom false color during selection
+    static void setUseCustomFalseColor(const bool);
+
 	//! Set pixel culling state
 	static void setPixelCullingUsage(const bool);
 
@@ -169,6 +175,8 @@ private:
 
 	//! In selection mode
 	static bool m_IsInSelectionMode;
+
+    static bool m_UseCustomFalseColor;
 
 	//! Pixel culling activation
 	static bool m_IsPixelCullingActivated;

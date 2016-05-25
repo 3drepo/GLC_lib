@@ -1303,7 +1303,8 @@ void GLC_Mesh::normalRenderLoop(const GLC_RenderProperties& renderProperties, bo
 			bool materialIsrenderable = (pCurrentMaterial->isTransparent() == isTransparent);
 
 			// Choose the material to render
-            if ((materialIsrenderable || m_IsSelected) && !GLC_State::isInSelectionMode())
+
+            if ((materialIsrenderable || m_IsSelected) && (!GLC_State::isInSelectionMode() ||GLC_State::useCustomFalseColor()))
 	    	{
 				// Execute current material
 				pCurrentMaterial->glExecute();
@@ -1312,7 +1313,8 @@ void GLC_Mesh::normalRenderLoop(const GLC_RenderProperties& renderProperties, bo
 			}
 
 	   		// Choose the primitives to render
-            if (m_IsSelected || GLC_State::isInSelectionMode() || materialIsrenderable)
+
+            if (m_IsSelected || (GLC_State::isInSelectionMode() && !GLC_State::useCustomFalseColor()) || materialIsrenderable)
 			{
 
 				if (vboIsUsed)
@@ -1528,16 +1530,17 @@ void GLC_Mesh::outlineSilhouetteRenderLoop(const GLC_RenderProperties& renderPro
 {
 	const bool isTransparent= (renderProperties.renderingFlag() == glc::TransparentRenderFlag);
 	//if ((!m_IsSelected || !isTransparent) || GLC_State::isInSelectionMode())
-	if ((!isTransparent) || GLC_State::isInSelectionMode())
+    if ((!isTransparent) /*|| GLC_State::isInSelectionMode()*/)
 	{
 		LodPrimitiveGroups::iterator iGroup= m_PrimitiveGroups.value(m_CurrentLod)->begin();
 		while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
 		{
 			GLC_PrimitiveGroup* pCurrentGroup= iGroup.value();
-			//GLC_Material* pCurrentMaterial= m_MaterialHash.value(pCurrentGroup->id());
+            GLubyte colorId[4];
+
 
 			// Encode silhouette information in RGBA color
-			GLubyte colorId[4];
+
 			static int uid = 0;
 			int uid_flags = 0;
 			if (renderProperties.isSelected()) {
