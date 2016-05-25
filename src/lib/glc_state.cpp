@@ -36,6 +36,7 @@ bool GLC_State::m_PointSpriteSupported= true;
 bool GLC_State::m_UseShader= true;
 bool GLC_State::m_UseSelectionShader= false;
 bool GLC_State::m_IsInSelectionMode= false;
+bool GLC_State::m_UseCustomFalseColor= false;
 bool GLC_State::m_IsPixelCullingActivated= true;
 bool GLC_State::m_IsFrameBufferSupported= false;
 bool GLC_State::m_IsFrameBufferBlitSupported= false;
@@ -94,6 +95,12 @@ bool GLC_State::isInSelectionMode()
 {
     Q_ASSERT(m_IsValid);
     return m_IsInSelectionMode;
+}
+
+bool GLC_State::useCustomFalseColor()
+{
+    Q_ASSERT(m_IsValid);
+    return m_UseCustomFalseColor;
 }
 
 QString GLC_State::version()
@@ -206,6 +213,11 @@ void GLC_State::setSelectionShaderUsage(const bool shaderUsed)
 void GLC_State::setSelectionMode(const bool mode)
 {
     m_IsInSelectionMode= mode;
+}
+
+void GLC_State::setUseCustomFalseColor(const bool mode)
+{
+    m_UseCustomFalseColor= mode;
 }
 
 void GLC_State::setPixelCullingUsage(const bool activation)
