@@ -120,75 +120,6 @@ quint32 GLC_WireData::chunckID()
 	return m_ChunkId;
 }
 
-
-GLfloatVector GLC_WireData::positionVector() const
-{
-	if (m_VerticeBuffer.isCreated())
-	{
-		// VBO created get data from VBO
-		const int sizeOfVbo= m_PositionSize;
-		const GLsizeiptr dataSize= sizeOfVbo * sizeof(float);
-		GLfloatVector positionVector(sizeOfVbo);
-
-		const_cast<QOpenGLBuffer&>(m_VerticeBuffer).bind();
-		GLvoid* pVbo = const_cast<QOpenGLBuffer&>(m_VerticeBuffer).map(QOpenGLBuffer::ReadOnly);
-		memcpy(positionVector.data(), pVbo, dataSize);
-		const_cast<QOpenGLBuffer&>(m_VerticeBuffer).unmap();
-		const_cast<QOpenGLBuffer&>(m_VerticeBuffer).release();
-		return positionVector;
-	}
-	else
-	{
-		return m_Positions;
-	}
-}
-
-// Return the color Vector
-GLfloatVector GLC_WireData::colorVector() const
-{
-	if (m_ColorBuffer.isCreated())
-	{
-		// VBO created get data from VBO
-		const int sizeOfVbo= m_ColorSize;
-		const GLsizeiptr dataSize= sizeOfVbo * sizeof(GLfloat);
-		GLfloatVector normalVector(sizeOfVbo);
-
-		const_cast<QOpenGLBuffer&>(m_ColorBuffer).bind();
-		GLvoid* pVbo = const_cast<QOpenGLBuffer&>(m_ColorBuffer).map(QOpenGLBuffer::ReadOnly);
-		memcpy(normalVector.data(), pVbo, dataSize);
-		const_cast<QOpenGLBuffer&>(m_ColorBuffer).unmap();
-		const_cast<QOpenGLBuffer&>(m_ColorBuffer).release();
-		return normalVector;
-	}
-	else
-	{
-		return m_Colors;
-	}
-}
-
-QVector<GLuint> GLC_WireData::indexVector() const
-{
-	if (m_IndexBuffer.isCreated())
-	{
-		// VBO created get data from VBO
-		const int sizeOfIbo= m_PositionSize / 3;
-		const GLsizeiptr dataSize= sizeOfIbo * sizeof(GLuint);
-		QVector<GLuint> indexVector(sizeOfIbo);
-
-		const_cast<QOpenGLBuffer&>(m_IndexBuffer).bind();
-		GLvoid* pIbo = const_cast<QOpenGLBuffer&>(m_IndexBuffer).map(QOpenGLBuffer::ReadOnly);
-		memcpy(indexVector.data(), pIbo, dataSize);
-		const_cast<QOpenGLBuffer&>(m_IndexBuffer).unmap();
-		const_cast<QOpenGLBuffer&>(m_IndexBuffer).release();
-		return indexVector;
-	}
-	else
-	{
-		return m_IndexVector;
-	}
-}
-
-
 GLC_BoundingBox& GLC_WireData::boundingBox()
 {
 	if (NULL == m_pBoundingBox)
@@ -273,21 +204,6 @@ void GLC_WireData::clear()
 	m_VerticeGroupCount= 0;
 }
 
-void GLC_WireData::copyVboToClientSide()
-{
-	if (m_VerticeBuffer.isCreated() && m_Positions.isEmpty())
-	{
-		m_Positions= positionVector();
-
-		if (m_ColorBuffer.isCreated() && m_Colors.isEmpty())
-		{
-			m_Colors= colorVector();
-		}
-		m_IndexVector= indexVector();
-	}
-
-}
-
 void GLC_WireData::releaseVboClientSide(bool update)
 {
     if (m_VerticeBuffer.isCreated() && !m_Positions.isEmpty())
@@ -299,14 +215,8 @@ void GLC_WireData::releaseVboClientSide(bool update)
         else
         {
             m_PositionSize= m_Positions.size();
-            m_Positions.clear();
-
-            m_IndexVector.clear();
-
             m_ColorSize= m_Colors.size();
-            m_Colors.clear();
         }
-
     }
 }
 
@@ -328,7 +238,35 @@ void GLC_WireData::setVboUsage(bool usage)
 			m_IndexVector= indexVector();
 			m_IndexBuffer.destroy();
 		}
-	}
+    }
+}
+
+void GLC_WireData::add(const GLC_WireData& other, const GLC_Matrix4x4& matrix)
+{
+    GLfloatVector position= other.positionVector();
+    const int verticeGroupCount= other.verticeGroupCount();
+
+    int startIndex= 0;
+    for (int iGroup= 0; iGroup < verticeGroupCount; ++iGroup)
+    {
+        GLsizei verticeGroupSize= other.verticeGroupSize(iGroup);
+        int size= 3 * static_cast<int>(verticeGroupSize);
+
+        GLfloatVector currentPosition;
+
+        for (int i= startIndex; i < (startIndex + size); i+=3)
+        {
+            GLC_Vector3d vect(static_cast<double>(position.at(i))
+                              , static_cast<double>(position.at(i + 1))
+                              , static_cast<double>(position.at(i + 2)));
+            vect= matrix * vect;
+            currentPosition.append(static_cast<float>(vect.x()));
+            currentPosition.append(static_cast<float>(vect.y()));
+            currentPosition.append(static_cast<float>(vect.z()));
+        }
+        startIndex+= size;
+        addVerticeGroup(currentPosition);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -352,14 +290,10 @@ void GLC_WireData::finishVbo()
 	fillVBOs();
 
 	m_PositionSize= m_Positions.size();
-	m_Positions.clear();
-
-	m_IndexVector.clear();
 
 	if (m_ColorBuffer.isCreated())
 	{
 		m_ColorSize= m_Colors.size();
-		m_Colors.clear();
 	}
 }
 
@@ -542,7 +476,7 @@ QDataStream &operator<<(QDataStream &stream, const GLC_WireData &wireData)
 	stream << chunckId;
 
 	stream << wireData.m_NextPrimitiveLocalId;
-	stream << wireData.positionVector();
+    stream << wireData.m_Positions;
 	stream << wireData.m_PositionSize;
 
 	stream << wireData.m_VerticeGrouprSizes;
@@ -551,7 +485,7 @@ QDataStream &operator<<(QDataStream &stream, const GLC_WireData &wireData)
 	stream << wireData.m_VerticeGroupCount;
 
 	// New version Data
-	stream << wireData.colorVector();
+    stream << wireData.m_Colors;
 	stream << wireData.m_ColorSize;
 
 	return stream;

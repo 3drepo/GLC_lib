@@ -46,7 +46,6 @@ class GLC_LIB_EXPORT GLC_ExtrudedMesh : public GLC_Mesh
 
 public:
     //! Default constructor
-    /*! The points list must be in counterclockwise order*/
     GLC_ExtrudedMesh(const QList<GLC_Point3d>& points, const GLC_Vector3d& dir, double lenght);
 
     //! Copy constructor
@@ -90,6 +89,8 @@ public:
 //@{
 //////////////////////////////////////////////////////////////////////
 public:
+    virtual bool update();
+
     //! Assignement operator overload
     GLC_ExtrudedMesh& operator=(const GLC_ExtrudedMesh& other);
 
@@ -103,8 +104,12 @@ public:
     void setExtrudedVector(const GLC_Vector3d& extrudedVector);
 
     //! Set the mesh extruded lenght
-    void setExtrudedLenght(double lenght);
+    void setExtrudedLenght(double length);
 
+    //! Set Smothing index
+    void setSmothingIndex(const QList<int>& smothingIndex);
+
+    void setInvisibleEdgeIndex(const QList<int>& invisibleEdgeIndex);
 
 //@}
 
@@ -186,6 +191,11 @@ private:
 private:
     //! The list of point which define the face to extrude
     QList<GLC_Point3d> m_Points;
+
+    //! The list of index of smoothing points
+    QList<int> m_SmothingPoints;
+
+    QList<int> m_InvisibleEdgeIndex;
 
     //! The direction of extrusion
     GLC_Vector3d m_ExtrusionVector;

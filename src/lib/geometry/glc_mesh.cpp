@@ -172,11 +172,7 @@ const GLC_BoundingBox& GLC_Mesh::boundingBox()
 		//qDebug() << "GLC_Mesh2::boundingBox create boundingBox";
 		m_pBoundingBox= new GLC_BoundingBox();
 
-		if (m_MeshData.positionVectorHandle()->isEmpty())
-		{
-			qDebug() << "GLC_Mesh::boundingBox empty m_Positions";
-		}
-		else
+        if (!m_MeshData.positionVectorHandle()->isEmpty())
 		{
 			GLfloatVector* pVertexVector= m_MeshData.positionVectorHandle();
 			const int max= pVertexVector->size();
@@ -234,7 +230,7 @@ QVector<GLuint> GLC_Mesh::getTrianglesIndex(int lod, GLC_uint materialId) const
 	return resultIndex;
 }
 
-IndexList GLC_Mesh::getEquivalentTrianglesStripsFansIndex(int lod, GLC_uint materialId)
+IndexList GLC_Mesh::getEquivalentTrianglesStripsFansIndex(int lod, GLC_uint materialId) const
 {
 	IndexList subject;
 	if (containsTriangles(lod, materialId))
@@ -450,7 +446,6 @@ GLC_Mesh* GLC_Mesh::createMeshOfGivenLod(int lodIndex)
 {
 	Q_ASSERT(m_MeshData.lodCount() > lodIndex);
 
-	copyVboToClientSide();
 	GLC_Mesh* pLodMesh= new GLC_Mesh;
 	pLodMesh->setName(this->name() + "-LOD-" + QString::number(lodIndex));
 	QHash<GLuint, GLuint> sourceToTargetIndexMap;
@@ -474,7 +469,6 @@ GLC_Mesh* GLC_Mesh::createMeshFromGivenLod(int lodIndex)
 	const int lodCount= m_MeshData.lodCount();
 	Q_ASSERT(lodCount > lodIndex);
 
-	copyVboToClientSide();
 	GLC_Mesh* pLodMesh= new GLC_Mesh;
 	pLodMesh->setName(this->name() + "-LOD-" + QString::number(lodIndex));
 	QHash<GLuint, GLuint> sourceToTargetIndexMap;
@@ -511,7 +505,6 @@ GLC_Mesh& GLC_Mesh::transformVertice(const GLC_Matrix4x4& matrix)
 	{
 		delete m_pBoundingBox;
 		m_pBoundingBox= NULL;
-		copyVboToClientSide();
 		const int stride= 3;
 		GLfloatVector* pVectPos= m_MeshData.positionVectorHandle();
 		const GLC_Matrix4x4 rotationMatrix= matrix.rotationMatrix();
@@ -540,7 +533,7 @@ GLC_Mesh& GLC_Mesh::transformVertice(const GLC_Matrix4x4& matrix)
 double GLC_Mesh::volume()
 {
 	double resultVolume= 0.0;
-
+    update();
 	if (!m_MeshData.isEmpty())
 	{
 		IndexList triangleIndex;
@@ -820,12 +813,6 @@ void GLC_Mesh::replaceMaterial(const GLC_uint oldId, GLC_Material* pMat)
 
 }
 
-void GLC_Mesh::copyVboToClientSide()
-{
-	m_MeshData.copyVboToClientSide();
-	GLC_Geometry::copyVboToClientSide();
-}
-
 void GLC_Mesh::releaseVboClientSide(bool update)
 {
 	m_MeshData.releaseVboClientSide(update);
@@ -1098,6 +1085,14 @@ void GLC_Mesh::drawMeshWire(const GLC_RenderProperties& renderProperties, GLC_Co
     if (!GLC_State::isInSelectionMode())
     {
         pContext->glcEnableLighting(false);
+        const bool hasActiveShader= GLC_Shader::hasActiveShader();
+        GLC_Shader* pActiveShader= GLC_Shader::currentShaderHandle();
+        if (hasActiveShader)
+        {
+            GLC_Shader::unuse();
+            QOpenGLContext::currentContext()->functions()->glUseProgram(0);
+        }
+
         // Set polyline colors
         GLfloat color[4]= {static_cast<float>(m_WireColor.redF()),
                                 static_cast<float>(m_WireColor.greenF()),
@@ -1107,6 +1102,11 @@ void GLC_Mesh::drawMeshWire(const GLC_RenderProperties& renderProperties, GLC_Co
         glColor4fv(color);
         m_WireData.glDraw(renderProperties, GL_LINE_STRIP);
         pContext->glcEnableLighting(true);
+        if (hasActiveShader)
+        {
+
+            pActiveShader->use();
+        }
     }
     else
     {
@@ -1725,7 +1725,7 @@ void GLC_Mesh::copyBulkData(GLC_Mesh* pLodMesh, const QHash<GLuint, GLuint>& tag
 	}
 }
 
-IndexList GLC_Mesh::equivalentTrianglesIndexOfstripsIndex(int lodIndex, GLC_uint materialId)
+IndexList GLC_Mesh::equivalentTrianglesIndexOfstripsIndex(int lodIndex, GLC_uint materialId) const
 {
 	IndexList trianglesIndex;
 	if (containsStrips(lodIndex, materialId))
@@ -1760,7 +1760,7 @@ IndexList GLC_Mesh::equivalentTrianglesIndexOfstripsIndex(int lodIndex, GLC_uint
 	return trianglesIndex;
 }
 
-IndexList GLC_Mesh::equivalentTrianglesIndexOfFansIndex(int lodIndex, GLC_uint materialId)
+IndexList GLC_Mesh::equivalentTrianglesIndexOfFansIndex(int lodIndex, GLC_uint materialId) const
 {
 	IndexList trianglesIndex;
 	if (containsFans(lodIndex, materialId))

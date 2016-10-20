@@ -41,7 +41,7 @@ GLC_Geometry::GLC_Geometry(const QString& name, const bool typeIsWire)
 , m_UseColorPerVertex(false)
 , m_IsSelected(false)
 , m_WireData()
-, m_WireColor(Qt::black)
+, m_WireColor(60, 60, 60)
 , m_LineWidth(1.0f)
 , m_IsWire(typeIsWire)		// the geometry type
 , m_TransparentMaterialNumber(0)
@@ -196,7 +196,17 @@ void GLC_Geometry::updateTransparentMaterialNumber()
 	if (m_WireColor.alpha() != 255)
 	{
 		++m_TransparentMaterialNumber;
-	}
+    }
+}
+
+void GLC_Geometry::addVerticeGroups(const GLC_Geometry& other, const GLC_Matrix4x4& matrix)
+{
+    m_WireData.add(other.m_WireData, matrix);
+}
+
+void GLC_Geometry::addVerticeGroups(const GLC_WireData& wireData, const GLC_Matrix4x4& matrix)
+{
+    m_WireData.add(wireData, matrix);
 }
 
 // Add material to mesh
@@ -235,11 +245,6 @@ void GLC_Geometry::setWireColor(const QColor& color)
 	}
 
 	m_WireColor= color;
-}
-
-void GLC_Geometry::copyVboToClientSide()
-{
-	m_WireData.copyVboToClientSide();
 }
 
 void GLC_Geometry::releaseVboClientSide(bool update)

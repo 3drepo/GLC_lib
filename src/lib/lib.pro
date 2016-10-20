@@ -1,6 +1,6 @@
 # GLC_lib qmake configuration
 TEMPLATE = lib
-QT += core opengl quick
+QT += core opengl quick concurrent
 
 win32:LIBS += -lopengl32
 
@@ -29,6 +29,8 @@ INCLUDEPATH += ./3rdparty/zlib
 
 RESOURCES += glc_lib.qrc
 
+include (3rdparty/assimp/assimp.pri)
+
 # Input					
 
 HEADERS_QUAZIP +=   3rdparty/quazip/crypt.h \
@@ -45,7 +47,7 @@ HEADERS_QUAZIP +=   3rdparty/quazip/crypt.h \
                     3rdparty/quazip/quazipfile.h \
                     3rdparty/quazip/quazipfileinfo.h \
                     3rdparty/quazip/quazipnewinfo.h \
-                    3rdparty/quazip/unzip.h \
+                    3rdparty/quazip/qua_unzip.h \
                     3rdparty/quazip/zip.h
 
 HEADERS_LIB3DS +=   3rdparty/lib3ds/atmosphere.h \
@@ -72,14 +74,14 @@ HEADERS_LIB3DS +=   3rdparty/lib3ds/atmosphere.h \
 HEADERS_GLEXT += 3rdparty/glext/glext.h
 
 HEADERS_CLIP2TR +=  3rdparty/clip2tri/clip2tri/clip2tri.h \
-                    3rdparty/clip2tri/clipper/clipper.hpp \
-                    3rdparty/clip2tri/poly2tri/common/shapes.h \
-                    3rdparty/clip2tri/poly2tri/common/utils.h \
-                    3rdparty/clip2tri/poly2tri/sweep/advancing_front.h \
-                    3rdparty/clip2tri/poly2tri/sweep/cdt.h \
-                    3rdparty/clip2tri/poly2tri/sweep/sweep.h \
-                    3rdparty/clip2tri/poly2tri/sweep/sweep_context.h \
-                    3rdparty/clip2tri/poly2tri/poly2tri.h
+                    3rdparty/clip2tri/clipper/clip_clipper.hpp \
+                    3rdparty/clip2tri/poly2tri/common/clip_shapes.h \
+                    3rdparty/clip2tri/poly2tri/common/clip_utils.h \
+                    3rdparty/clip2tri/poly2tri/sweep/clip_advancing_front.h \
+                    3rdparty/clip2tri/poly2tri/sweep/clip_cdt.h \
+                    3rdparty/clip2tri/poly2tri/sweep/clip_sweep.h \
+                    3rdparty/clip2tri/poly2tri/sweep/clip_sweep_context.h \
+                    3rdparty/clip2tri/poly2tri/clip_poly2tri.h
 
 HEADERS_GLC_MATHS += 	maths/glc_utils_maths.h \
                         maths/glc_vector2d.h \
@@ -107,7 +109,8 @@ HEADERS_GLC_IO +=   io/glc_objmtlloader.h \
                     io/glc_fileloader.h \
                     io/glc_worldreaderplugin.h \
                     io/glc_worldreaderhandler.h \
-                    io/glc_worldtoobj.h
+                    io/glc_worldtoobj.h \
+                    io/glc_assimptoworld.h
 
 HEADERS_GLC_SCENEGRAPH +=   sceneGraph/glc_3dviewcollection.h \
                             sceneGraph/glc_3dviewinstance.h \
@@ -145,7 +148,12 @@ HEADERS_GLC_GEOMETRY += geometry/glc_geometry.h \
                         geometry/glc_sphere.h \
                         geometry/glc_pointcloud.h \
                         geometry/glc_extrudedmesh.h \
-                        geometry/glc_text.h
+                        geometry/glc_text.h \
+                        geometry/glc_csghelper.h \
+                        geometry/glc_csgnode.h \
+                        geometry/glc_csgoperatornode.h \
+                        geometry/glc_csgleafnode.h
+
 
 HEADERS_GLC_SHADING +=  shading/glc_material.h \
                         shading/glc_texture.h \
@@ -221,10 +229,12 @@ HEADERS_GLC_QML +=      qml/glc_quickitem.h \
                         qml/glc_quickselection.h \
                         qml/glc_quickviewhandler.h
 
+HEADERS_GLC_CSGJS += 3rdparty/csgjs/csgjs.h
+
 HEADERS += $${HEADERS_QUAZIP} $${HEADERS_LIB3DS} $${HEADERS_GLC_MATHS} $${HEADERS_GLC_IO}
 HEADERS += $${HEADERS_GLC} $${HEADERS_GLEXT} $${HEADERS_GLC_SCENEGRAPH} $${HEADERS_GLC_GEOMETRY}
 HEADERS += $${HEADERS_GLC_SHADING} $${HEADERS_GLC_VIEWPORT} $${HEADERS_GLC_3DWIDGET} $${HEADERS_GLC_GLU}
-HEADERS += $${HEADERS_GLC_QML} $${HEADERS_CLIP2TR}
+HEADERS += $${HEADERS_GLC_QML} $${HEADERS_CLIP2TR} $${HEADERS_GLC_CSGJS}
 		   
 SOURCES += 3rdparty/zlib/adler32.c \
            3rdparty/zlib/compress.c \
@@ -249,7 +259,7 @@ SOURCES += 3rdparty/quazip/JlCompress.cpp \
            3rdparty/quazip/quazipfile.cpp \
            3rdparty/quazip/quazipfileinfo.cpp \
            3rdparty/quazip/quazipnewinfo.cpp \
-           3rdparty/quazip/unzip.c \
+           3rdparty/quazip/qua_unzip.c \
            3rdparty/quazip/zip.c
 
 SOURCES += 3rdparty/lib3ds/atmosphere.c \
@@ -273,12 +283,14 @@ SOURCES += 3rdparty/lib3ds/atmosphere.c \
    
 
 SOURCES += 3rdparty/clip2tri/clip2tri/clip2tri.cpp \
-            3rdparty/clip2tri/clipper/clipper.cpp \
-            3rdparty/clip2tri/poly2tri/common/shapes.cc \
-            3rdparty/clip2tri/poly2tri/sweep/advancing_front.cc \
-            3rdparty/clip2tri/poly2tri/sweep/cdt.cc \
-            3rdparty/clip2tri/poly2tri/sweep/sweep.cc \
-            3rdparty/clip2tri/poly2tri/sweep/sweep_context.cc
+            3rdparty/clip2tri/clipper/clip_clipper.cpp \
+            3rdparty/clip2tri/poly2tri/common/clip_shapes.cc \
+            3rdparty/clip2tri/poly2tri/sweep/clip_advancing_front.cc \
+            3rdparty/clip2tri/poly2tri/sweep/clip_cdt.cc \
+            3rdparty/clip2tri/poly2tri/sweep/clip_sweep.cc \
+            3rdparty/clip2tri/poly2tri/sweep/clip_sweep_context.cc
+
+SOURCES +=      3rdparty/csgjs/csgjs.cpp
 
 SOURCES +=	maths/glc_matrix4x4.cpp \
                 maths/glc_vector4d.cpp \
@@ -298,7 +310,8 @@ SOURCES +=	io/glc_objmtlloader.cpp \
                 io/glc_worldto3ds.cpp \
                 io/glc_bsreptoworld.cpp \
                 io/glc_fileloader.cpp \
-                io/glc_worldtoobj.cpp
+                io/glc_worldtoobj.cpp \
+                io/glc_assimptoworld.cpp
 
 SOURCES +=	sceneGraph/glc_3dviewcollection.cpp \
                 sceneGraph/glc_3dviewinstance.cpp \
@@ -336,7 +349,12 @@ SOURCES +=	geometry/glc_geometry.cpp \
                 geometry/glc_sphere.cpp \
                 geometry/glc_pointcloud.cpp \
                 geometry/glc_extrudedmesh.cpp \
-                geometry/glc_text.cpp
+                geometry/glc_text.cpp \
+                geometry/glc_csghelper.cpp \
+                geometry/glc_csgnode.cpp \
+                geometry/glc_csgoperatornode.cpp \
+                geometry/glc_csgleafnode.cpp
+
 
 
 SOURCES +=	shading/glc_material.cpp \
@@ -531,7 +549,12 @@ HEADERS_INST = GLC_BoundingBox \
                GLC_QuickSelection \
                GLC_OpenGLViewWidget \
                GLC_Text \
-               GLC_PlaneManipulator
+               GLC_PlaneManipulator \
+               GLC_CsgHelper \
+               GLC_CsgNode \
+               GLC_CsgOperatorNode \
+               GLC_CsgLeafNode
+
 
 include (../../install.pri)
 

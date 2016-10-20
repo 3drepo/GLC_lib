@@ -72,7 +72,7 @@ void GLWidget::paintGL()
 	m_GlView.glExecuteCam();
 
 	// Display the circle
-	m_Circle.render();
+    //m_Circle.render();
 //////////////////////////End GLC specific/////////////////////////////////////
 
 }

@@ -72,6 +72,15 @@ public:
 	//! Return this axis length
 	inline double axisLength() const
 	{return m_AxisLength;}
+
+    //! Return the axis radius/length ratio
+    inline double axisRadiusRatio() const
+    {return m_AxisRadiusRatio;}
+
+    //! Return the move step
+    inline double moveStep() const
+    {return m_MoveStep;}
+
 //@}
 
 //////////////////////////////////////////////////////////////////////
@@ -88,8 +97,18 @@ public:
 	//! Set the axis length
 	void setAxisLength(double length);
 
+    //! Set the axis radius/length ratio
+    void setAxisRadiusLengthRatio(double value);
+
 	//! Set Axis center
 	void setCenter(const GLC_Point3d& newCenter);
+
+    //! Set Axis orientation
+    void setOrientation(const GLC_Matrix4x4& matrix);
+
+    //! Set the move step
+    void setMoveStep(double value)
+    {m_MoveStep= value;}
 
 //@}
 
@@ -140,6 +159,9 @@ private:
 	//! The axis center
 	GLC_Point3d m_Center;
 
+    //! The axis orientation matrix
+    GLC_Matrix4x4 m_OrientationMatrix;
+
 	//! The manipulator scale factor
 	double m_ScaleFactor;
 
@@ -154,6 +176,9 @@ private:
 
 	//! The axis radius Ratio : Radius / Length
 	double m_AxisRadiusRatio;
+
+    //! The move step
+    double m_MoveStep;
 
 };
 
