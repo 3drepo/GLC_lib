@@ -34,29 +34,25 @@ quint32 GLC_ExtrudedMesh::m_ChunkId= 0xA712;
 GLC_ExtrudedMesh::GLC_ExtrudedMesh(const QList<GLC_Point3d> &points, const GLC_Vector3d &dir, double lenght)
     :GLC_Mesh()
     , m_Points(points)
+    , m_SmothingPoints()
+    , m_InvisibleEdgeIndex()
     , m_ExtrusionVector(GLC_Vector3d(dir).normalize())
     , m_ExtrusionLenght(lenght)
     , m_GivenFaceNormal()
 {
-    Q_ASSERT(m_Points.size() > 2);
-    Q_ASSERT(pointsLieOnAPlane());
-    Q_ASSERT(!glc::compare(m_Points.first(), m_Points.last(), glc::EPSILON));
 
-    computeGivenFaceNormal();
-    createMeshAndWire();
 }
 
 GLC_ExtrudedMesh::GLC_ExtrudedMesh(const GLC_ExtrudedMesh &other)
     :GLC_Mesh(other)
     , m_Points(other.m_Points)
+    , m_SmothingPoints(other.m_SmothingPoints)
+    , m_InvisibleEdgeIndex(other.m_InvisibleEdgeIndex)
     , m_ExtrusionVector(other.m_ExtrusionVector)
     , m_ExtrusionLenght(other.m_ExtrusionLenght)
     , m_GivenFaceNormal(other.m_GivenFaceNormal)
 {
-    if (GLC_Mesh::isEmpty())
-    {
-        createMeshAndWire();
-    }
+
 }
 
 GLC_ExtrudedMesh::~GLC_ExtrudedMesh()
@@ -83,12 +79,30 @@ const GLC_BoundingBox &GLC_ExtrudedMesh::boundingBox()
     return GLC_Mesh::boundingBox();
 }
 
+bool GLC_ExtrudedMesh::update()
+{
+    bool subject;
+    if (GLC_Mesh::isEmpty())
+    {
+        createMeshAndWire();
+        subject= true;
+    }
+    else
+    {
+        subject= false;
+    }
+
+    return subject;
+}
+
 GLC_ExtrudedMesh &GLC_ExtrudedMesh::operator =(const GLC_ExtrudedMesh &other)
 {
     if (this != &other)
     {
         GLC_Mesh::operator =(other);
         m_Points= other.m_Points;
+        m_SmothingPoints= other.m_SmothingPoints;
+        m_InvisibleEdgeIndex= other.m_InvisibleEdgeIndex;
         m_ExtrusionVector= other.m_ExtrusionVector;
         m_ExtrusionLenght= other.m_ExtrusionLenght;
         m_GivenFaceNormal= other.m_GivenFaceNormal;
@@ -100,41 +114,125 @@ GLC_ExtrudedMesh &GLC_ExtrudedMesh::operator =(const GLC_ExtrudedMesh &other)
 void GLC_ExtrudedMesh::setGeometry(const QList<GLC_Point3d> &points, const GLC_Vector3d &extrudedVector, double lenght)
 {
     m_Points= points;
+    m_SmothingPoints.clear();
+    m_InvisibleEdgeIndex.clear();
+
     m_ExtrusionVector= extrudedVector;
     m_ExtrusionLenght= lenght;
 
     GLC_Mesh::clearMeshWireAndBoundingBox();
-    createMeshAndWire();
 }
 
 void GLC_ExtrudedMesh::setPoints(const QList<GLC_Point3d> &points)
 {
-    m_Points= points;
+    const int count= points.count();
+    bool isEqual;
+    if (count == m_Points.count())
+    {
+        isEqual= true;
+        for (int i= 0; i < count; ++i)
+        {
+            isEqual= glc::compare(points.at(i), m_Points.at(i));
+            if (!isEqual) break;
+        }
+    }
+    else
+    {
+        isEqual= false;
+    }
+    if (!isEqual)
+    {
+        m_Points= points;
+        m_SmothingPoints.clear();
+        m_InvisibleEdgeIndex.clear();
 
-    GLC_Mesh::clearMeshWireAndBoundingBox();
-    createMeshAndWire();
+        GLC_Mesh::clearMeshWireAndBoundingBox();
+    }
 }
 
 void GLC_ExtrudedMesh::setExtrudedVector(const GLC_Vector3d &extrudedVector)
 {
-    m_ExtrusionVector= extrudedVector;
-
-    GLC_Mesh::clearMeshWireAndBoundingBox();
-    createMeshAndWire();
+    if (!glc::compare(extrudedVector, m_ExtrusionVector))
+    {
+        m_ExtrusionVector= extrudedVector;
+        GLC_Mesh::clearMeshWireAndBoundingBox();
+    }
 }
 
-void GLC_ExtrudedMesh::setExtrudedLenght(double lenght)
+void GLC_ExtrudedMesh::setExtrudedLenght(double length)
 {
-    m_ExtrusionLenght= lenght;
+    if (!glc::compare(length, m_ExtrusionLenght))
+    {
+        m_ExtrusionLenght= length;
+        GLC_Mesh::clearMeshWireAndBoundingBox();
+    }
+}
 
-    GLC_Mesh::clearMeshWireAndBoundingBox();
-    createMeshAndWire();
+void GLC_ExtrudedMesh::setSmothingIndex(const QList<int> &smothingIndex)
+{
+    const int count= smothingIndex.count();
+    bool isEqual;
+    if (count == m_SmothingPoints.count())
+    {
+        for (int i= 0; i < count; ++i)
+        {
+            isEqual= smothingIndex.at(i) == m_SmothingPoints.at(i);
+            if (!isEqual) break;
+        }
+    }
+    else
+    {
+        isEqual= false;
+    }
+
+    if (!isEqual)
+    {
+        m_SmothingPoints= smothingIndex;
+        GLC_Mesh::clearMeshWireAndBoundingBox();
+    }
+}
+
+void GLC_ExtrudedMesh::setInvisibleEdgeIndex(const QList<int>& invisibleEdgeIndex)
+{
+    const int count= invisibleEdgeIndex.count();
+    bool isEqual;
+    if (count == m_InvisibleEdgeIndex.count())
+    {
+        for (int i= 0; i < count; ++i)
+        {
+            isEqual= invisibleEdgeIndex.at(i) == m_InvisibleEdgeIndex.at(i);
+            if (!isEqual) break;
+        }
+    }
+    else
+    {
+        isEqual= false;
+    }
+
+    if (!isEqual)
+    {
+        m_InvisibleEdgeIndex= invisibleEdgeIndex;
+        GLC_Mesh::clearMeshWireAndBoundingBox();
+    }
 }
 
 void GLC_ExtrudedMesh::createMeshAndWire()
 {
     Q_ASSERT(GLC_Mesh::isEmpty());
     Q_ASSERT(m_WireData.isEmpty());
+
+    Q_ASSERT(m_Points.size() > 2);
+    Q_ASSERT(pointsLieOnAPlane());
+    Q_ASSERT(!glc::compare(m_Points.first(), m_Points.last(), glc::EPSILON));
+
+    computeGivenFaceNormal();
+    if (glc::compare(m_GivenFaceNormal, m_ExtrusionVector) || (m_GivenFaceNormal.angleWithVect(m_ExtrusionVector) > (glc::PI / 2.0)))
+    {
+        std::reverse(m_Points.begin(), m_Points.end());
+        std::reverse(m_SmothingPoints.begin(), m_SmothingPoints.end());
+        std::reverse(m_InvisibleEdgeIndex.begin(), m_InvisibleEdgeIndex.end());
+        m_GivenFaceNormal.invert();
+    }
 
     createMesh();
     createWire();
@@ -233,16 +331,19 @@ void GLC_ExtrudedMesh::createWire()
     const int count= m_Points.count();
     for (int i= 0; i < count; ++i)
     {
-        GLfloatVector edge(6); // the edge is a line
-        edge[0]= baseFaceWire.at(i * 3);
-        edge[1]= baseFaceWire.at(i * 3 + 1);
-        edge[2]= baseFaceWire.at(i * 3 + 2);
+        if (!m_InvisibleEdgeIndex.contains(i))
+        {
+            GLfloatVector edge(6); // the edge is a line
+            edge[0]= baseFaceWire.at(i * 3);
+            edge[1]= baseFaceWire.at(i * 3 + 1);
+            edge[2]= baseFaceWire.at(i * 3 + 2);
 
-        edge[3]= createdFaceWire.at(((count - i) % count) * 3);
-        edge[4]= createdFaceWire.at(((count - i) % count) * 3 + 1);
-        edge[5]= createdFaceWire.at(((count - i) % count) * 3 + 2);
+            edge[3]= createdFaceWire.at(((count - i) % count) * 3);
+            edge[4]= createdFaceWire.at(((count - i) % count) * 3 + 1);
+            edge[5]= createdFaceWire.at(((count - i) % count) * 3 + 2);
 
-        GLC_Geometry::addVerticeGroup(edge);
+            GLC_Geometry::addVerticeGroup(edge);
+        }
     }
 }
 
@@ -254,6 +355,7 @@ void GLC_ExtrudedMesh::computeGivenFaceNormal()
     const GLC_Vector3d edge2(GLC_Vector3d(m_Points.at(2) - m_Points.at(1)).normalize());
 
     m_GivenFaceNormal= edge1 ^ edge2;
+    m_GivenFaceNormal.normalize();
 }
 
 bool GLC_ExtrudedMesh::pointsLieOnAPlane() const
@@ -286,15 +388,41 @@ GLfloatVector GLC_ExtrudedMesh::baseOutlineNormals() const
         GLC_Vector3d vect(m_Points.at((i + 1) % count) - m_Points.at(i));
         GLC_Vector3d normal= GLC_Vector3d(m_ExtrusionVector ^ vect).normalize();
 
+        GLC_Vector3d normal1;
+        GLC_Vector3d normal2;
+
+        if (m_SmothingPoints.contains(i))
+        {
+            const int prevIndex= ((i - 1) < 0) ? (count + (i - 1)) : (i - 1);
+            GLC_Vector3d prevVect(m_Points.at(i) - m_Points.at(prevIndex));
+            GLC_Vector3d prevNormal= GLC_Vector3d(m_ExtrusionVector ^ prevVect).normalize();
+            normal1= (normal + prevNormal).normalize();
+        }
+        else
+        {
+            normal1= normal;
+        }
+
+        if (m_SmothingPoints.contains(((i + 1) % count)))
+        {
+            GLC_Vector3d nextVect(m_Points.at((i + 2) % count) - m_Points.at((i + 1) % count));
+            GLC_Vector3d nextNormal= GLC_Vector3d(m_ExtrusionVector ^ nextVect).normalize();
+            normal2= (normal + nextNormal).normalize();
+        }
+        else
+        {
+            normal2= normal;
+        }
+
         // First segment point
-        subject[(6 * i)]= static_cast<GLfloat>(normal.x());
-        subject[(6 * i) + 1]= static_cast<GLfloat>(normal.y());
-        subject[(6 * i) + 2]= static_cast<GLfloat>(normal.z());
+        subject[(6 * i)]= static_cast<GLfloat>(normal1.x());
+        subject[(6 * i) + 1]= static_cast<GLfloat>(normal1.y());
+        subject[(6 * i) + 2]= static_cast<GLfloat>(normal1.z());
 
         // Second segment point
-        subject[(6 * i) + 3]= static_cast<GLfloat>(normal.x());
-        subject[(6 * i) + 4]= static_cast<GLfloat>(normal.y());
-        subject[(6 * i) + 5]= static_cast<GLfloat>(normal.z());
+        subject[(6 * i) + 3]= static_cast<GLfloat>(normal2.x());
+        subject[(6 * i) + 4]= static_cast<GLfloat>(normal2.y());
+        subject[(6 * i) + 5]= static_cast<GLfloat>(normal2.z());
     }
 
     return subject;
@@ -310,15 +438,41 @@ GLfloatVector GLC_ExtrudedMesh::createdOutlineNormals() const
         GLC_Vector3d vect(m_Points.at(i % count) - m_Points.at(i - 1));
         GLC_Vector3d normal= GLC_Vector3d(m_ExtrusionVector ^ vect).normalize();
 
+        GLC_Vector3d normal1;
+        GLC_Vector3d normal2;
+
+        if (m_SmothingPoints.contains((i % count)))
+        {
+            GLC_Vector3d nextVect(m_Points.at((i + 1) % count) - m_Points.at(i % count));
+            GLC_Vector3d nextNormal= GLC_Vector3d(m_ExtrusionVector ^ nextVect).normalize();
+            normal1= (normal + nextNormal).normalize();
+        }
+        else
+        {
+            normal1= normal;
+        }
+
+        if (m_SmothingPoints.contains(i - 1))
+        {
+            const int prevPrevIndex= ((i - 2) < 0) ? (count + (i - 2)) : (i - 2);
+            GLC_Vector3d prevVect(m_Points.at(i - 1) - m_Points.at(prevPrevIndex));
+            GLC_Vector3d prevNormal= GLC_Vector3d(m_ExtrusionVector ^ prevVect).normalize();
+            normal2= (normal + prevNormal).normalize();
+        }
+        else
+        {
+            normal2= normal;
+        }
+
         // First segment point
-        subject[(6 * index)]= static_cast<GLfloat>(normal.x());
-        subject[(6 * index) + 1]= static_cast<GLfloat>(normal.y());
-        subject[(6 * index) + 2]= static_cast<GLfloat>(normal.z());
+        subject[(6 * index)]= static_cast<GLfloat>(normal1.x());
+        subject[(6 * index) + 1]= static_cast<GLfloat>(normal1.y());
+        subject[(6 * index) + 2]= static_cast<GLfloat>(normal1.z());
 
         // Second segment point
-        subject[(6 * index) + 3]= static_cast<GLfloat>(normal.x());
-        subject[(6 * index) + 4]= static_cast<GLfloat>(normal.y());
-        subject[(6 * index) + 5]= static_cast<GLfloat>(normal.z());
+        subject[(6 * index) + 3]= static_cast<GLfloat>(normal2.x());
+        subject[(6 * index) + 4]= static_cast<GLfloat>(normal2.y());
+        subject[(6 * index) + 5]= static_cast<GLfloat>(normal2.z());
         ++index;
     }
 

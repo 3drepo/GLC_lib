@@ -804,63 +804,96 @@ GLC_Vector3d glc::triangulatePolygonClip2TRi(QList<GLuint> *pIndexList, const QL
     const GLC_Point3d p1(originPoints[0]);
     const GLC_Point3d p2(originPoints[1]);
     const GLC_Point3d p3(originPoints[2]);
+    GLC_Vector3d subject(triangleNormal(p1, p2, p3));
 
-    GLC_Vector3d normal(triangleNormal(p1, p2, p3));
-
-    // Create the transformation matrix
-    GLC_Matrix4x4 transformation;
-
-    GLC_Vector3d rotationAxis(normal ^ glc::Z_AXIS);
-    if (!rotationAxis.isNull())
+    // Check if the vertice lies on the plane
+    GLC_Plane plane(p1, p2, p3);
+    bool isLieOnPlane= true;
+    int i= 3;
+    while (isLieOnPlane && (i < size))
     {
-        const double angle= acos(normal * glc::Z_AXIS);
-        transformation.setMatRot(rotationAxis, angle);
+        GLC_Point3d point= originPoints.at(i);
+        isLieOnPlane= plane.lieOnThisPlane(point);
+        ++i;
     }
-    else if (glc::compare(Z_AXIS.inverted(), normal))
+    if (isLieOnPlane)
     {
-        transformation.setMatRot(glc::X_AXIS, glc::PI);
-    }
+        // Create the transformation matrix
+        GLC_Matrix4x4 transformation;
 
-    QList<GLC_Point2d> polygon;
-    vector<c2t::Point> boundingPolygon(size);
-    // Transform polygon vertexs
-    for (int i=0; i < size; ++i)
-    {
-        originPoints[i]= transformation * originPoints[i];
-        // Create 2d vector
-
-        GLC_Point2d currentPoint= originPoints[i].toVector2d(Z_AXIS);
-        polygon.append(currentPoint);
-        c2t::Point point;
-        point.x= currentPoint.x();
-        point.y= currentPoint.y();
-        boundingPolygon[i]= point;
-    }
-
-    vector<vector<c2t::Point> > inputPolygons;
-    vector<c2t::Point> outputTriangles;  // Every 3 points is a triangle
-
-    c2t::clip2tri clip2tri;
-    clip2tri.triangulate(inputPolygons, outputTriangles, boundingPolygon);
-
-    QList<GLuint> oldIndex(*pIndexList);
-    pIndexList->clear();
-    const int count= outputTriangles.size();
-    for (int i= 0; i < count; ++i)
-    {
-        const GLC_Point2d point(outputTriangles.at(i).x, outputTriangles.at(i).y);
-        for (int j= 0; j < size ; ++j)
+        GLC_Vector3d rotationAxis(subject ^ glc::Z_AXIS);
+        if (!rotationAxis.isNull())
         {
-            if (glc::compare(point, (polygon.at(j))))
+            const double angle= acos(subject * glc::Z_AXIS);
+            transformation.setMatRot(rotationAxis, angle);
+        }
+        else if (glc::compare(Z_AXIS.inverted(), subject))
+        {
+            transformation.setMatRot(glc::X_AXIS, glc::PI);
+        }
+
+        QList<GLC_Point2d> polygon;
+        vector<c2t::Point> boundingPolygon(size);
+        // Transform polygon vertexs
+        for (int i=0; i < size; ++i)
+        {
+            originPoints[i]= transformation * originPoints[i];
+            // Create 2d vector
+
+            GLC_Point2d currentPoint= originPoints[i].toVector2d(Z_AXIS);
+            polygon.append(currentPoint);
+            c2t::Point point;
+            point.x= currentPoint.x();
+            point.y= currentPoint.y();
+            boundingPolygon[i]= point;
+        }
+
+        if (polygonCompatibleWithClip2TRi(polygon))
+        {
+            vector<vector<c2t::Point> > inputPolygons;
+            vector<c2t::Point> outputTriangles;  // Every 3 points is a triangle
+
+            c2t::clip2tri clip2tri;
+            clip2tri.triangulate(inputPolygons, outputTriangles, boundingPolygon);
+
+            QList<GLuint> oldIndex(*pIndexList);
+            pIndexList->clear();
+            const int count= outputTriangles.size();
+            for (int i= 0; i < count; ++i)
             {
-                pIndexList->append(oldIndex.at(j));
-                break;
+                const GLC_Point2d point(outputTriangles.at(i).x, outputTriangles.at(i).y);
+                for (int j= 0; j < size ; ++j)
+                {
+                    if (glc::compare(point, (polygon.at(j))))
+                    {
+                        pIndexList->append(oldIndex.at(j));
+                    }
+                }
+            }
+            if(pIndexList->size() != count)
+            {
+                qWarning() << "glc::triangulatePolygonClip2TRi failed";
+                // Somethings got wrong
+                // Use the old method wich preserve index integrety
+                pIndexList->operator =(oldIndex);
+                triangulatePolygon(pIndexList, bulkList);
             }
         }
+        else
+        {
+            qWarning() << "Polygon with NULL edge found glc::triangulatePolygonClip2TRi failed";
+            qWarning() << "Use old method";
+            triangulatePolygon(pIndexList, bulkList);
+        }
     }
-    Q_ASSERT(pIndexList->size() == count);
+    else
+    {
+        qWarning() << "Non planar polygon found glc::triangulatePolygonClip2TRi failed";
+        qWarning() << "Use old method";
+        triangulatePolygon(pIndexList, bulkList);
+    }
 
-    return normal;
+    return subject;
 }
 
 bool glc::triangleIsCCW(const GLC_Point3d& p1, const GLC_Point3d& p2, const GLC_Point3d& p3, const GLC_Vector3d& normal)
@@ -893,6 +926,86 @@ QList<GLC_uint> glc::reverseTriangleIndexWindingOrder(const QList<GLC_uint>& ind
         subject.append(index.at(i + 2));
         subject.append(index.at(i + 1));
     }
+
+    return subject;
+}
+
+bool glc::polygonCompatibleWithClip2TRi(const QList<GLC_Point2d> polygon)
+{
+    bool subject= true;
+    const int count= polygon.count();
+    int i= 0;
+    while (subject && (i < count))
+    {
+        GLC_Point2d p1= polygon.at(i);
+        int j= i + 1;
+        while (subject && (j < count))
+        {
+            GLC_Point2d p2= polygon.at(j);
+            subject= !glc::compare(p1, p2, glc::EPSILON);
+            ++j;
+        }
+        ++i;
+    }
+
+    return subject;
+}
+
+QList<GLC_Point3d> glc::AddCorner(const QList<GLC_Point3d> &segments, double radius, int count)
+{
+    Q_ASSERT(segments.count() == 3);
+    Q_ASSERT(radius > 0.0);
+    Q_ASSERT(count > 1);
+
+    QList<GLC_Point3d> subject;
+
+    // Compute face normal to compute angle between segments
+    const GLC_Point3d p0(segments[0]);
+    const GLC_Point3d p1(segments[1]);
+    const GLC_Point3d p2(segments[2]);
+
+    const GLC_Vector3d edge0(p1 - p0);
+    const GLC_Vector3d edge1(p1 - p2);
+
+    GLC_Vector3d direction(edge1 ^ edge0);
+    direction.normalize();
+
+    const double angle = (edge1.signedAngleWithVect(edge0, direction));
+    const double deltaLength= radius * (cos(angle / 2.0) / sin(angle / 2.0));
+
+    // Compute new segment end before corner
+    GLC_Vector3d p1OffsetOnEdge0(p0 - p1);
+    p1OffsetOnEdge0.setLength(deltaLength);
+    GLC_Point3d newP1OnEdge0= p1 + p1OffsetOnEdge0;
+
+    GLC_Vector3d p1OffsetOnEdge1(p2 - p1);
+    p1OffsetOnEdge1.setLength(deltaLength);
+    GLC_Point3d newP1OnEdge1= p1 + p1OffsetOnEdge1;
+
+
+    // Compute corner axis position
+    GLC_Matrix4x4 m1(p1OffsetOnEdge0, glc::PI / 2.0);
+    GLC_Vector3d centerOffset= m1 * direction;
+    centerOffset.setLength(radius);
+    GLC_Point3d axisPos= newP1OnEdge0 + centerOffset;
+
+    // Add first segment
+    subject << p0 << newP1OnEdge0;
+
+    const double deltaAngle= (glc::PI - angle) / count; // Complementary angle
+
+    // Add Corner
+    const GLC_Point3d relativeStartingPoint(newP1OnEdge0 - axisPos);
+    for (int i= 1; i < count; ++i)
+    {
+        const double currentAngle= deltaAngle * i;
+        const GLC_Matrix4x4 transformation(direction, currentAngle);
+        const GLC_Point3d currentPoint(transformation * relativeStartingPoint);
+        subject.append(currentPoint + axisPos);
+    }
+
+    // Add last segment
+    subject << newP1OnEdge1 << p2;
 
     return subject;
 }

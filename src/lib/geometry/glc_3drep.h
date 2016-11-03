@@ -135,11 +135,17 @@ public:
 //////////////////////////////////////////////////////////////////////
 public:
 	//! Add Geometry to the 3DRep
-	inline void addGeom(GLC_Geometry* pGeom)
+    void addGeom(GLC_Geometry* pGeom)
 	{
 		m_pGeomList->append(pGeom);
 		*m_pIsLoaded= true;
 	}
+
+    //! Take geometry
+    QList<GLC_Geometry*> takeGeometry();
+
+    //! Remove all geometries of this 3DRep
+    void clear();
 
 	//! Remove empty geometries and factorise materials
 	void clean();
@@ -164,9 +170,6 @@ public:
 
 	//! Take the geometry of another 3DRep
 	void take(GLC_3DRep* pSource);
-
-	//! Copy VBO to the Client Side
-	void copyVboToClientSide();
 
 	//! Release client VBO
 	void releaseVboClientSide(bool update= false);

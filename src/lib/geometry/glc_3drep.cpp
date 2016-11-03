@@ -238,7 +238,21 @@ double GLC_3DRep::volume() const
 		resultVolume+= m_pGeomList->at(i)->volume();
 	}
 
-	return resultVolume;
+    return resultVolume;
+}
+
+QList<GLC_Geometry*> GLC_3DRep::takeGeometry()
+{
+    QList<GLC_Geometry*> subject(*m_pGeomList);
+    m_pGeomList->clear();
+    *m_pIsLoaded= false;
+
+    return subject;
+}
+
+void GLC_3DRep::clear()
+{
+    clear3DRepGeom();
 }
 
 void GLC_3DRep::clean()
@@ -365,16 +379,6 @@ void GLC_3DRep::take(GLC_3DRep* pSource)
 	pSource->m_pGeomList->clear();
 }
 
-void GLC_3DRep::copyVboToClientSide()
-{
-	// Get the number of geometry of pRep
-	const int pRepSize= m_pGeomList->size();
-	for (int i= 0; i < pRepSize; ++i)
-	{
-		geomAt(i)->copyVboToClientSide();
-	}
-}
-
 void GLC_3DRep::releaseVboClientSide(bool update)
 {
 	// Get the number of geometry of pRep
@@ -448,6 +452,7 @@ void GLC_3DRep::clear3DRepGeom()
         delete (*m_pGeomList)[i];
     }
     m_pGeomList->clear();
+    *m_pIsLoaded= false;
 }
 
 // Non Member methods
