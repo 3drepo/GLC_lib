@@ -55,6 +55,8 @@ GLC_Mesh::GLC_Mesh(const GLC_Mesh& mesh)
 , m_MeshData(mesh.m_MeshData)
 , m_CurrentLod(0)
 {
+    m_SelectionMaterialHash = mesh.m_SelectionMaterialHash;
+
 	// Make a copy of m_PrimitiveGroups with new material id
 	PrimitiveGroupsHash::const_iterator iPrimitiveGroups= mesh.m_PrimitiveGroups.constBegin();
 	while (mesh.m_PrimitiveGroups.constEnd() != iPrimitiveGroups)
@@ -72,6 +74,14 @@ GLC_Mesh::GLC_Mesh(const GLC_Mesh& mesh)
 		}
 
 		++iPrimitiveGroups;
+	}
+
+	MaterialHash::const_iterator i = mesh.m_SelectionMaterialHash.constBegin();
+	while (i != mesh.m_SelectionMaterialHash.constEnd())
+	{
+		// update inner material use table
+		i.value()->addGLC_Geom(this);
+		++i;
 	}
 
 }
@@ -368,7 +378,15 @@ GLC_Material *GLC_Mesh::MaterialOfPrimitiveId(GLC_uint id, int lod) const
             if (listOfId.contains(id))
             {
                 const GLC_uint materialId= pCurrentGroup->id();
-                pSubject= this->material(materialId);
+				if (GLC_State::isInSelectionMode() && GLC_State::useCustomFalseColor())
+				{
+					pSubject = m_SelectionMaterialHash.value(pCurrentGroup->id());
+				}
+				else
+				{
+					pSubject = this->material(materialId);
+				}
+
                 iGroup= pMasterLodPrimitiveGroup->constEnd();
             }
             else
@@ -640,9 +658,17 @@ void GLC_Mesh::clearMeshWireAndBoundingBox()
 }
 
 // Add triangles
-GLC_uint GLC_Mesh::addTriangles(GLC_Material* pMaterial, const IndexList& indexList, const int lod, double accuracy)
+GLC_uint GLC_Mesh::addTriangles(GLC_Material* pMaterial, const IndexList& indexList, const int lod, double accuracy, GLC_Material* selectMaterial)
 {
 	GLC_uint groupId= setCurrentMaterial(pMaterial, lod, accuracy);
+	if (selectMaterial)
+	{
+
+		// Add this geometry in the material use table
+		selectMaterial->addGLC_Geom(this);
+		// Add the Material to Material hash table
+		m_SelectionMaterialHash.insert(groupId, selectMaterial);
+	}
 	Q_ASSERT(m_PrimitiveGroups.value(lod)->contains(groupId));
 	Q_ASSERT(!indexList.isEmpty());
 
@@ -1297,17 +1323,27 @@ void GLC_Mesh::normalRenderLoop(const GLC_RenderProperties& renderProperties, bo
 		while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
 		{
 			GLC_PrimitiveGroup* pCurrentGroup= iGroup.value();
-			GLC_Material* pCurrentMaterial= m_MaterialHash.value(pCurrentGroup->id());
+			GLC_Material* pCurrentMaterial = nullptr;
+			if (GLC_State::isInSelectionMode() && GLC_State::useCustomFalseColor())
+			{
+				pCurrentMaterial = m_SelectionMaterialHash.value(pCurrentGroup->id());
+			}
+			else
+			{
+				pCurrentMaterial = m_MaterialHash.value(pCurrentGroup->id());
+			}
+			
 
 			// Test if the current material is renderable
 			bool materialIsrenderable = (pCurrentMaterial->isTransparent() == isTransparent);
 
 			// Choose the material to render
 
-            if ((materialIsrenderable || m_IsSelected) && (!GLC_State::isInSelectionMode() ||GLC_State::useCustomFalseColor()))
+            if ((materialIsrenderable || m_IsSelected) )
 	    	{
-				// Execute current material
-				pCurrentMaterial->glExecute();
+
+                // Execute current material
+                pCurrentMaterial->glExecute();
 
 				if (m_IsSelected) GLC_SelectionMaterial::glExecute();
 			}
@@ -1378,7 +1414,15 @@ void GLC_Mesh::OverwriteTransparencyRenderLoop(const GLC_RenderProperties& rende
 		while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
 		{
 			GLC_PrimitiveGroup* pCurrentGroup= iGroup.value();
-			GLC_Material* pCurrentMaterial= m_MaterialHash.value(pCurrentGroup->id());
+			GLC_Material* pCurrentMaterial = nullptr;
+			if (GLC_State::isInSelectionMode() && GLC_State::useCustomFalseColor())
+			{
+				pCurrentMaterial = m_SelectionMaterialHash.value(pCurrentGroup->id());
+			}
+			else
+			{
+				pCurrentMaterial = m_MaterialHash.value(pCurrentGroup->id());
+			}
 
 			// Execute current material
 			pCurrentMaterial->glExecute(alpha);
@@ -1480,7 +1524,15 @@ void GLC_Mesh::primitiveRenderLoop(const GLC_RenderProperties& renderProperties,
 	while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
 	{
 		GLC_PrimitiveGroup* pCurrentGroup= iGroup.value();
-		GLC_Material* pCurrentMaterial= m_MaterialHash.value(pCurrentGroup->id());
+		GLC_Material* pCurrentMaterial = nullptr;
+		if (GLC_State::isInSelectionMode() && GLC_State::useCustomFalseColor())
+		{
+			pCurrentMaterial = m_SelectionMaterialHash.value(pCurrentGroup->id());
+		}
+		else
+		{
+			pCurrentMaterial = m_MaterialHash.value(pCurrentGroup->id());
+		}
 
 		// Test if the current material is renderable
 		const bool materialIsrenderable = (pCurrentMaterial->isTransparent() == isTransparent);
@@ -1506,7 +1558,16 @@ void GLC_Mesh::primitiveSelectedRenderLoop(const GLC_RenderProperties& renderPro
 	while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
 	{
 		GLC_PrimitiveGroup* pCurrentGroup= iGroup.value();
-		GLC_Material* pCurrentMaterial= m_MaterialHash.value(pCurrentGroup->id());
+		GLC_Material* pCurrentMaterial = nullptr;
+		if (GLC_State::isInSelectionMode() && GLC_State::useCustomFalseColor())
+		{
+
+			pCurrentMaterial = m_SelectionMaterialHash.value(pCurrentGroup->id());
+		}
+		else
+		{
+			pCurrentMaterial = m_MaterialHash.value(pCurrentGroup->id());
+		}
 
 		// Test if the current material is renderable
 		const bool materialIsrenderable = (pCurrentMaterial->isTransparent() == isTransparent);
