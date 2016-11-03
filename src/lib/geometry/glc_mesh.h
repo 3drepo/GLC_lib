@@ -243,7 +243,12 @@ public:
 	{*(m_MeshData.colorVectorHandle()) = colors;}
 
 	//! Add triangles
-	GLC_uint addTriangles(GLC_Material*, const IndexList&, const int lod= 0, double accuracy= 0.0);
+	//! Add triangles
+	GLC_uint addTriangles(GLC_Material* mat, const IndexList& idx, GLC_Material* selectionMat)
+	{
+        return addTriangles(mat, idx, 0, 0, selectionMat);
+	}
+	GLC_uint addTriangles(GLC_Material*, const IndexList&, const int lod= 0, double accuracy= 0.0, GLC_Material*  = nullptr);
 
 	//! Add triangles Strip and return his id
 	GLC_uint addTrianglesStrip(GLC_Material*, const IndexList&, const int lod= 0, double accuracy= 0.0);
@@ -325,6 +330,8 @@ protected:
 private:
 	//! Set the current material
 	GLC_uint setCurrentMaterial(GLC_Material*, const int, double);
+
+
 
 	//! Fill VBOs and IBOs
 	void fillVbosAndIbos();
@@ -424,6 +431,9 @@ private:
 	//! The default material Id
 	GLC_uint m_DefaultMaterialId;
 
+	//! Material Hash table
+	MaterialHash m_SelectionMaterialHash;
+
 	//! Mesh number of vertice
 	unsigned int m_NumberOfVertice;
 
@@ -441,6 +451,7 @@ private:
 
 	//! Class chunk id
 	static quint32 m_ChunkId;
+	
 
 };
 
