@@ -626,6 +626,8 @@ int GLC_3DViewCollection::numberOfUsedShadingGroup() const
 	return m_ShaderGroup.values().toSet().size();
 }
 
+#include <iostream>
+#include <sstream>
 //////////////////////////////////////////////////////////////////////
 // OpenGL Functions
 //////////////////////////////////////////////////////////////////////
@@ -633,6 +635,8 @@ int GLC_3DViewCollection::numberOfUsedShadingGroup() const
 void GLC_3DViewCollection::render(GLuint groupId, glc::RenderFlag renderFlag)
 {
     GLC_Context* pContext= GLC_ContextManager::instance()->currentContext();
+
+
 	if (!isEmpty() && m_IsViewable)
 	{
 		if (renderFlag == glc::WireRenderFlag)
@@ -648,7 +652,7 @@ void GLC_3DViewCollection::render(GLuint groupId, glc::RenderFlag renderFlag)
 		}
 		else
 		{
-            pContext->glcEnableLighting(true);
+			pContext->glcEnableLighting(true);
 		}
 		glDraw(groupId, renderFlag);
 
@@ -657,6 +661,7 @@ void GLC_3DViewCollection::render(GLuint groupId, glc::RenderFlag renderFlag)
 	        glDisable(GL_POLYGON_OFFSET_FILL);
 		}
 	}
+
 }
 void GLC_3DViewCollection::renderShaderGroup(glc::RenderFlag renderFlag)
 {
@@ -681,7 +686,7 @@ void GLC_3DViewCollection::renderShaderGroup(glc::RenderFlag renderFlag)
 void GLC_3DViewCollection::glDraw(GLC_uint groupId, glc::RenderFlag renderFlag)
 {
 	// Set render Mode and OpenGL state
-	if (!GLC_State::isInSelectionMode() && (groupId == 0))
+	if (!GLC_State::isInSelectionMode() && (groupId == 0) && !GLC_State::isRenderingSelection())
 	{
 		if (renderFlag == glc::TransparentRenderFlag)
 		{
@@ -699,19 +704,21 @@ void GLC_3DViewCollection::glDraw(GLC_uint groupId, glc::RenderFlag renderFlag)
 	}
 
 	// Normal GLC_3DViewInstance
-	if ((groupId == 0) && !m_MainInstances.isEmpty())
+	if ((groupId == 0) && !m_MainInstances.isEmpty() )
 	{
+		if (GLC_State::selectionShaderUsed() && GLC_State::isRenderingSelection()) GLC_SelectionMaterial::useShader();		
 		glDrawInstancesOf(&m_MainInstances, renderFlag);
+		if (GLC_State::selectionShaderUsed() && GLC_State::isRenderingSelection()) GLC_SelectionMaterial::unUseShader();
 
 	}
 	// Selected GLC_3DVIewInstance
-	else if ((groupId == 1) && !m_SelectedInstances.isEmpty())
+	else if ((groupId == 1))
 	{
+		
 		if (GLC_State::selectionShaderUsed()) GLC_SelectionMaterial::useShader();
-
-		glDrawInstancesOf(&m_SelectedInstances, renderFlag);
-
+			glDrawInstancesOf(&m_SelectedInstances, renderFlag);
 		if (GLC_State::selectionShaderUsed()) GLC_SelectionMaterial::unUseShader();
+
 	}
 	// GLC_3DViewInstance with shader
 	else if (!m_ShadedPointerViewInstanceHash.isEmpty())
@@ -727,7 +734,7 @@ void GLC_3DViewCollection::glDraw(GLC_uint groupId, glc::RenderFlag renderFlag)
 	}
 
 	// Restore OpenGL state
-	if (renderFlag && !GLC_State::isInSelectionMode() && (groupId == 0))
+	if (renderFlag && !GLC_State::isInSelectionMode() && (groupId == 0) && !GLC_State::isRenderingSelection())
 	{
 		glDisable(GL_BLEND);
 		glDepthMask(GL_TRUE);

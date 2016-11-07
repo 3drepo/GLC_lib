@@ -187,6 +187,14 @@ public:
 	inline bool isEmpty() const
 	{return m_MeshData.isEmpty();}
 
+	virtual bool isTransparent() const
+	{
+		if (GLC_State::isRenderingSelection())
+			return false;
+		else
+			return GLC_Geometry::isTransparent();
+	}
+
 	//! Return the mesh wire color
 	inline QColor wireColor() const
 	{return m_WireColor;}
@@ -289,6 +297,8 @@ public:
 	//! Set VBO usage
 	virtual void setVboUsage(bool usage);
 
+
+	void updateSubMeshSelectedCount(const bool increment);
 //@}
 
 //////////////////////////////////////////////////////////////////////
@@ -442,6 +452,8 @@ private:
 
 	//! Color pear vertex
 	bool m_ColorPearVertex;
+
+	unsigned int m_subMeshSelected;
 
 	//! Data of the mesh (Bulk Data + LOD with indexs)
 	GLC_MeshData m_MeshData;

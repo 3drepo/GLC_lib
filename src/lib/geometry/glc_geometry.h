@@ -145,7 +145,7 @@ public:
 	virtual GLC_Geometry* clone() const = 0;
 
 	//! Get the geometry transparency
-	inline bool isTransparent() const
+	virtual bool isTransparent() const
 	{return (m_TransparentMaterialNumber >= m_MaterialHash.size()) && hasTransparentMaterials();}
 
 	//! Return true if the geometry contains transparent materials

@@ -324,11 +324,12 @@ GLC_3DViewInstance& GLC_3DViewInstance::resetMatrix(void)
 //////////////////////////////////////////////////////////////////////
 // OpenGL Functions
 //////////////////////////////////////////////////////////////////////
-
+#include <iostream>
+#include <sstream>
 // Display the instance
 void GLC_3DViewInstance::render(glc::RenderFlag renderFlag, bool useLod, GLC_Viewport* pView)
 {
-    if (!GLC_State::isInSelectionMode() || (GLC_State::isInSelectionMode() && m_RenderProperties.selectable()))
+	if (!GLC_State::isInSelectionMode() || (GLC_State::isInSelectionMode() && m_RenderProperties.selectable()))
     {
         //qDebug() << "GLC_3DViewInstance::render render properties= " << m_RenderProperties.renderingMode();
         if (m_3DRep.isEmpty()) return;

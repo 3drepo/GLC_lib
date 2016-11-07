@@ -324,7 +324,7 @@ void GLC_Geometry::glPropGeom(const GLC_RenderProperties& renderProperties)
 		glLineWidth(m_LineWidth);
         pContext->glcEnableLighting(false);
         glDisable(GL_TEXTURE_2D);
-		if (!renderProperties.isSelected())
+		if (!renderProperties.isSelected() && !GLC_State::isRenderingSelection())
 		{
 			// Set polyline colors
 			GLfloat color[4]= {static_cast<float>(m_WireColor.redF()),
@@ -351,7 +351,7 @@ void GLC_Geometry::glPropGeom(const GLC_RenderProperties& renderProperties)
 		else
 		{
             pContext->glcEnableLighting(true);
-			if (renderProperties.isSelected()) GLC_SelectionMaterial::glExecute();
+			if (renderProperties.isSelected() || GLC_State::isRenderingSelection()) GLC_SelectionMaterial::glExecute();
 			else pCurrentMaterial->glExecute();
 		}
 	}
