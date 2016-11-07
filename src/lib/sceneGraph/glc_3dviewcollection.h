@@ -377,7 +377,7 @@ void GLC_3DViewCollection::glDrawInstancesOf(PointerViewInstanceHash* pHash, glc
 				pCurInstance= iEntry.value();
 				if ((pCurInstance->viewableFlag() != GLC_3DViewInstance::NoViewable) && (pCurInstance->isVisible() == m_IsInShowSate))
 				{
-					if (!pCurInstance->isTransparent() || pCurInstance->renderPropertiesHandle()->isSelected() || (renderFlag == glc::WireRenderFlag))
+					if (!pCurInstance->isTransparent() || pCurInstance->renderPropertiesHandle()->isSelected() || GLC_State::isRenderingSelection() || (renderFlag == glc::WireRenderFlag))
 					{
 						pCurInstance->render(renderFlag, m_UseLod, m_pViewport);
 					}

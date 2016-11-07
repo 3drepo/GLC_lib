@@ -40,6 +40,7 @@ bool GLC_State::m_UseCustomFalseColor= false;
 bool GLC_State::m_IsPixelCullingActivated= true;
 bool GLC_State::m_IsFrameBufferSupported= false;
 bool GLC_State::m_IsFrameBufferBlitSupported= false;
+bool GLC_State::m_renderSelection = false;
 
 QString GLC_State::m_Version;
 QString GLC_State::m_Vendor;
@@ -163,9 +164,15 @@ void GLC_State::init()
         m_Version= (char *) glGetString(GL_VERSION);
         m_Vendor= (char *) glGetString(GL_VENDOR);
         m_Renderer= (char *) glGetString(GL_RENDERER);
-
+		
         m_IsValid= true;
     }
+}
+
+
+bool GLC_State::isRenderingSelection()
+{
+	return m_renderSelection;
 }
 
 bool GLC_State::isValid()
@@ -197,6 +204,11 @@ void GLC_State::setFrameBufferBlitSupport()
 void GLC_State::setGlslUsage(const bool glslUsage)
 {
     m_UseShader= glslUsage;
+}
+
+void GLC_State::setRenderSelectionMode(const bool renderSelection)
+{
+	m_renderSelection = renderSelection;
 }
 
 void GLC_State::setSelectionShaderUsage(const bool shaderUsed)

@@ -86,6 +86,9 @@ public:
 	//! Return true if pixel culling is activate
 	static bool isPixelCullingActivated();
 
+	//! Returns true if we are in selection rendering pass
+	static bool isRenderingSelection();
+
 	//! Return true if the cache is used
 	static bool cacheIsUsed();
 
@@ -127,6 +130,9 @@ public:
 
 	//! Set GLSL usage
 	static void setGlslUsage(const bool);
+
+	//! Set in rendering selection object mode
+	static void setRenderSelectionMode(const bool);
 
 	//! Set selection shader usage
 	static void setSelectionShaderUsage(const bool);
@@ -207,6 +213,9 @@ private:
 
     //! Frame buffer supported
     static bool m_IsFrameBufferBlitSupported;
+
+	//! Rendering selection
+	static bool m_renderSelection;
 
 	//! State valid flag
 	static bool m_IsValid;

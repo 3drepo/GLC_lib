@@ -135,12 +135,19 @@ public:
 	inline int numberOfUsage() const
 	{return m_WhereUsed.size() + m_OtherUsage.size();}
 
+	inline WhereUsed getGeo() const
+	{
+		return m_WhereUsed;
+	}
+
 	//! Return the texture handle
 	inline GLC_Texture* textureHandle() const
 	{return m_pTexture;}
 
 	//! Return the material hash code
 	uint hashCode() const;
+
+	bool isSelected() const { return isSelectedMaterial; }
 
 //@}
 
@@ -206,6 +213,8 @@ public:
 	//! Set the material opacity
 	void setOpacity(const qreal);
 
+        void setSelection(const bool b) { isSelectedMaterial = b; };
+
 //@}
 
 //////////////////////////////////////////////////////////////////////
@@ -269,6 +278,8 @@ private:
 
 	//! Class chunk id
 	static quint32 m_ChunkId;
+	
+	bool isSelectedMaterial;
 
 };
 

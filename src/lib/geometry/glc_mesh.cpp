@@ -40,6 +40,7 @@ GLC_Mesh::GLC_Mesh()
 , m_ColorPearVertex(false)
 , m_MeshData()
 , m_CurrentLod(0)
+, m_subMeshSelected(0)
 {
 
 }
@@ -54,8 +55,9 @@ GLC_Mesh::GLC_Mesh(const GLC_Mesh& mesh)
 , m_ColorPearVertex(mesh.m_ColorPearVertex)
 , m_MeshData(mesh.m_MeshData)
 , m_CurrentLod(0)
+, m_subMeshSelected(mesh.m_subMeshSelected)
 {
-    m_SelectionMaterialHash = mesh.m_SelectionMaterialHash;
+	m_SelectionMaterialHash = mesh.m_SelectionMaterialHash;
 
 	// Make a copy of m_PrimitiveGroups with new material id
 	PrimitiveGroupsHash::const_iterator iPrimitiveGroups= mesh.m_PrimitiveGroups.constBegin();
@@ -105,6 +107,8 @@ GLC_Mesh& GLC_Mesh::operator=(const GLC_Mesh& mesh)
 		m_NumberOfNormals= mesh.m_NumberOfNormals;
 		m_ColorPearVertex= mesh.m_ColorPearVertex;
 		m_MeshData= mesh.m_MeshData;
+		m_subMeshSelected = mesh.m_subMeshSelected;
+		m_SelectionMaterialHash = mesh.m_SelectionMaterialHash;
 		m_CurrentLod= 0;
 
 		// Make a copy of m_PrimitiveGroups with new material id
@@ -146,6 +150,8 @@ GLC_Mesh::~GLC_Mesh()
 		delete iGroups.value();
 		++iGroups;
     }
+    for(auto &mat : m_SelectionMaterialHash)
+        delete mat;
 }
 
 int GLC_Mesh::primitiveCount() const
@@ -642,6 +648,7 @@ void GLC_Mesh::clearMeshWireAndBoundingBox()
 	m_NumberOfVertice= 0;
 	m_NumberOfNormals= 0;
 	m_IsSelected= false;
+	m_subMeshSelected = 0;
 	m_ColorPearVertex= false;
 	// Clear data of the mesh
 	m_MeshData.clear();
@@ -955,11 +962,12 @@ void GLC_Mesh::saveToDataStream(QDataStream& stream) const
 	stream << m_NumberOfVertice;
 	stream << m_NumberOfNormals;
 }
+#include <sstream>
 
 //////////////////////////////////////////////////////////////////////
 // OpenGL Functions
 //////////////////////////////////////////////////////////////////////
-
+#include <iostream>
 // Virtual interface for OpenGL Geometry set up.
 void GLC_Mesh::glDraw(const GLC_RenderProperties& renderProperties)
 {
@@ -969,7 +977,8 @@ void GLC_Mesh::glDraw(const GLC_RenderProperties& renderProperties)
 
     const bool vboIsUsed= GLC_Geometry::vboIsUsed();
 
-    if (m_IsSelected && (renderProperties.renderingMode() == glc::PrimitiveSelected) && !GLC_State::isInSelectionMode()
+
+	if ((m_IsSelected || m_subMeshSelected) && (renderProperties.renderingMode() == glc::PrimitiveSelected) && !GLC_State::isInSelectionMode()
 	&& !renderProperties.setOfSelectedPrimitiveIdIsEmpty())
 	{
 		m_CurrentLod= 0;
@@ -996,9 +1005,10 @@ void GLC_Mesh::glDraw(const GLC_RenderProperties& renderProperties)
 			normalRenderLoop(renderProperties, vboIsUsed);
 		}
 	}
-	else if (m_IsSelected)
+	else if (m_IsSelected || m_subMeshSelected)
 	{
-		if (renderProperties.renderingMode() == glc::PrimitiveSelected)
+
+		if (renderProperties.renderingMode() == glc::PrimitiveSelected )
 		{
 			if (!renderProperties.setOfSelectedPrimitiveIdIsEmpty())
 			{
@@ -1007,6 +1017,7 @@ void GLC_Mesh::glDraw(const GLC_RenderProperties& renderProperties)
 			else
 			{
 				m_IsSelected= false;
+				m_subMeshSelected = 0;
 				if ((m_CurrentLod == 0) && (renderProperties.savedRenderingMode() == glc::OverwritePrimitiveMaterial) && !renderProperties.hashOfOverwritePrimitiveMaterialsIsEmpty())
 					primitiveRenderLoop(renderProperties, vboIsUsed);
 				else
@@ -1062,6 +1073,18 @@ void GLC_Mesh::glDraw(const GLC_RenderProperties& renderProperties)
     GLC_RenderStatistics::addTriangles(m_MeshData.trianglesCount(m_CurrentLod));
 }
 
+void GLC_Mesh::updateSubMeshSelectedCount(const bool increment)
+{
+	if (increment)
+		m_subMeshSelected++;
+	else
+		m_subMeshSelected--;
+
+	m_IsSelected = m_IsSelected || m_subMeshSelected;
+
+}
+
+
 void GLC_Mesh::setClientState()
 {
     if (GLC_Geometry::vboIsUsed())
@@ -1089,7 +1112,7 @@ void GLC_Mesh::setClientState()
 
 void GLC_Mesh::restoreClientState(GLC_Context *pContext)
 {
-    if (m_ColorPearVertex && !m_IsSelected && !GLC_State::isInSelectionMode())
+    if (m_ColorPearVertex && !m_IsSelected && !m_subMeshSelected && !GLC_State::isInSelectionMode())
     {
         pContext->glcDisableColorClientState();
         pContext->glcEnableColorMaterial(false);
@@ -1317,7 +1340,7 @@ void GLC_Mesh::moveIndexToMeshDataLod()
 void GLC_Mesh::normalRenderLoop(const GLC_RenderProperties& renderProperties, bool vboIsUsed)
 {
 	const bool isTransparent= (renderProperties.renderingFlag() == glc::TransparentRenderFlag);
-    if ((!m_IsSelected || !isTransparent) || GLC_State::isInSelectionMode())
+	if ((!m_IsSelected || (!isTransparent || GLC_State::isRenderingSelection() && m_subMeshSelected)) || GLC_State::isInSelectionMode())
 	{
 		LodPrimitiveGroups::iterator iGroup= m_PrimitiveGroups.value(m_CurrentLod)->begin();
 		while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
@@ -1332,36 +1355,46 @@ void GLC_Mesh::normalRenderLoop(const GLC_RenderProperties& renderProperties, bo
 			{
 				pCurrentMaterial = m_MaterialHash.value(pCurrentGroup->id());
 			}
-			
 
-			// Test if the current material is renderable
-			bool materialIsrenderable = (pCurrentMaterial->isTransparent() == isTransparent);
+			if (pCurrentMaterial->isSelected() && GLC_State::selectionShaderUsed()) GLC_SelectionMaterial::useShader();
 
-			// Choose the material to render
-
-            if ((materialIsrenderable || m_IsSelected) )
-	    	{
-
-                // Execute current material
-                pCurrentMaterial->glExecute();
-
-				if (m_IsSelected) GLC_SelectionMaterial::glExecute();
-			}
-
-	   		// Choose the primitives to render
-
-            if (m_IsSelected || (GLC_State::isInSelectionMode() && !GLC_State::useCustomFalseColor()) || materialIsrenderable)
+			if (!GLC_State::isRenderingSelection() || pCurrentMaterial->isSelected() || m_IsSelected)
 			{
 
-				if (vboIsUsed)
+				// Test if the current material is renderable
+				bool materialIsrenderable = (pCurrentMaterial->isTransparent() == isTransparent);
+
+				// Choose the material to render
+
+				if ((materialIsrenderable || m_IsSelected || pCurrentMaterial->isSelected()))
 				{
-					vboDrawPrimitivesOf(pCurrentGroup);
+
+					// Execute current material
+					pCurrentMaterial->glExecute();
+
+					if (m_IsSelected || pCurrentMaterial->isSelected())
+					{
+
+						GLC_SelectionMaterial::glExecute();
+
+					}
 				}
-				else
+
+				// Choose the primitives to render
+
+				if (m_IsSelected || pCurrentMaterial->isSelected()  || (GLC_State::isInSelectionMode() && !GLC_State::useCustomFalseColor()) || materialIsrenderable)
 				{
-					vertexArrayDrawPrimitivesOf(pCurrentGroup);
+					if (vboIsUsed)
+					{
+						vboDrawPrimitivesOf(pCurrentGroup);
+					}
+					else
+					{
+						vertexArrayDrawPrimitivesOf(pCurrentGroup);
+					}
 				}
 			}
+			if (pCurrentMaterial->isSelected() && GLC_State::selectionShaderUsed()) GLC_SelectionMaterial::unUseShader();
 
 			++iGroup;
 		}
@@ -1408,7 +1441,7 @@ void GLC_Mesh::OverwriteTransparencyRenderLoop(const GLC_RenderProperties& rende
 	// Test if the current material is renderable
 	bool materialIsrenderable = (renderProperties.renderingFlag() == glc::TransparentRenderFlag);
 
-	if (materialIsrenderable || m_IsSelected)
+	if (materialIsrenderable || m_IsSelected || m_subMeshSelected)
 	{
 		LodPrimitiveGroups::iterator iGroup= m_PrimitiveGroups.value(m_CurrentLod)->begin();
 		while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
@@ -1423,21 +1456,29 @@ void GLC_Mesh::OverwriteTransparencyRenderLoop(const GLC_RenderProperties& rende
 			{
 				pCurrentMaterial = m_MaterialHash.value(pCurrentGroup->id());
 			}
-
-			// Execute current material
-			pCurrentMaterial->glExecute(alpha);
-
-			if (m_IsSelected) GLC_SelectionMaterial::glExecute();
-
-	   		// Choose the primitives to render
-			if (m_IsSelected || materialIsrenderable)
+			if (pCurrentMaterial->isSelected() && GLC_State::selectionShaderUsed()) GLC_SelectionMaterial::useShader();
+			if (!GLC_State::isRenderingSelection() || pCurrentMaterial->isSelected() || m_IsSelected)
 			{
+				// Execute current material
+				pCurrentMaterial->glExecute(alpha);
 
-				if (vboIsUsed)
-					vboDrawPrimitivesOf(pCurrentGroup);
-				else
-					vertexArrayDrawPrimitivesOf(pCurrentGroup);
+				if (m_IsSelected || pCurrentMaterial->isSelected())
+				{
+					if (GLC_State::selectionShaderUsed()) GLC_SelectionMaterial::useShader();
+					GLC_SelectionMaterial::glExecute();
+				}
+
+				// Choose the primitives to render
+				if (m_IsSelected || materialIsrenderable)
+				{
+
+					if (vboIsUsed)
+						vboDrawPrimitivesOf(pCurrentGroup);
+					else
+						vertexArrayDrawPrimitivesOf(pCurrentGroup);
+				}
 			}
+			if (pCurrentMaterial->isSelected() && GLC_State::selectionShaderUsed()) GLC_SelectionMaterial::unUseShader();
 			++iGroup;
 		}
 	}
@@ -1464,7 +1505,7 @@ void GLC_Mesh::OverwriteTransparencyAndMaterialRenderLoop(const GLC_RenderProper
 		bool materialIsrenderable = (renderProperties.renderingFlag() == glc::TransparentRenderFlag);
 
    		// Choose the primitives to render
-		if (m_IsSelected || materialIsrenderable)
+		if (m_IsSelected || m_subMeshSelected || materialIsrenderable)
 		{
 
 			if (vboIsUsed)
@@ -1568,7 +1609,7 @@ void GLC_Mesh::primitiveSelectedRenderLoop(const GLC_RenderProperties& renderPro
 		{
 			pCurrentMaterial = m_MaterialHash.value(pCurrentGroup->id());
 		}
-
+		if (!pCurrentMaterial->isSelected()) continue;
 		// Test if the current material is renderable
 		const bool materialIsrenderable = (pCurrentMaterial->isTransparent() == isTransparent);
 

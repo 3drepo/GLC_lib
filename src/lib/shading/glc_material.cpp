@@ -47,6 +47,7 @@ GLC_Material::GLC_Material()
 , m_OtherUsage()
 , m_pTexture(NULL)			// no texture
 , m_Opacity(1.0)
+, isSelectedMaterial(false)
 {
 	//qDebug() << "GLC_Material::GLC_Material" << id();
 	// Diffuse Color
@@ -67,6 +68,7 @@ GLC_Material::GLC_Material(const QColor &diffuseColor)
 , m_OtherUsage()
 , m_pTexture(NULL)			// no texture
 , m_Opacity(1.0)
+, isSelectedMaterial(false)
 {
 	// Others
 	initOtherColor();
@@ -84,6 +86,7 @@ GLC_Material::GLC_Material(const QString& name ,const GLfloat *pDiffuseColor)
 , m_OtherUsage()
 , m_pTexture(NULL)			// no texture
 , m_Opacity(1.0)
+, isSelectedMaterial(false)
 {
 	//qDebug() << "GLC_Material::GLC_Material" << id();
 	// Init Diffuse Color
@@ -112,6 +115,7 @@ GLC_Material::GLC_Material(GLC_Texture* pTexture, const QString& name)
 , m_OtherUsage()
 , m_pTexture(pTexture)			// init texture
 , m_Opacity(1.0)
+, isSelectedMaterial(false)
 {
 	Q_ASSERT(NULL != m_pTexture);
 	//qDebug() << "GLC_Material::GLC_Material" << id();
@@ -137,6 +141,7 @@ GLC_Material::GLC_Material(const GLC_Material &InitMaterial)
 , m_OtherUsage()
 , m_pTexture(NULL)
 , m_Opacity(InitMaterial.m_Opacity)
+, isSelectedMaterial(false)
 {
 	//qDebug() << "GLC_Material::GLC_Material copy constructor" << id();
 	if (NULL != InitMaterial.m_pTexture)
