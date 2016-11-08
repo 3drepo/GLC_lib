@@ -256,7 +256,7 @@ public:
 	{
         return addTriangles(mat, idx, 0, 0, selectionMat);
 	}
-	GLC_uint addTriangles(GLC_Material*, const IndexList&, const int lod= 0, double accuracy= 0.0, GLC_Material*  = nullptr);
+	GLC_uint addTriangles(GLC_Material*, const IndexList&, const int lod= 0, double accuracy= 0.0, GLC_Material*  = NULL);
 
 	//! Add triangles Strip and return his id
 	GLC_uint addTrianglesStrip(GLC_Material*, const IndexList&, const int lod= 0, double accuracy= 0.0);

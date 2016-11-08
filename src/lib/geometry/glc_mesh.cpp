@@ -150,8 +150,9 @@ GLC_Mesh::~GLC_Mesh()
 		delete iGroups.value();
 		++iGroups;
     }
-    for(auto &mat : m_SelectionMaterialHash)
-        delete mat;
+    MaterialHash::iterator iMat = m_SelectionMaterialHash.begin();
+    for(; iMat != m_SelectionMaterialHash.end(); ++iMat)
+        delete *iMat;
 }
 
 int GLC_Mesh::primitiveCount() const
@@ -1346,7 +1347,7 @@ void GLC_Mesh::normalRenderLoop(const GLC_RenderProperties& renderProperties, bo
 		while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
 		{
 			GLC_PrimitiveGroup* pCurrentGroup= iGroup.value();
-			GLC_Material* pCurrentMaterial = nullptr;
+			GLC_Material* pCurrentMaterial = NULL;
 			if (GLC_State::isInSelectionMode() && GLC_State::useCustomFalseColor())
 			{
 				pCurrentMaterial = m_SelectionMaterialHash.value(pCurrentGroup->id());
@@ -1447,7 +1448,7 @@ void GLC_Mesh::OverwriteTransparencyRenderLoop(const GLC_RenderProperties& rende
 		while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
 		{
 			GLC_PrimitiveGroup* pCurrentGroup= iGroup.value();
-			GLC_Material* pCurrentMaterial = nullptr;
+			GLC_Material* pCurrentMaterial = NULL;
 			if (GLC_State::isInSelectionMode() && GLC_State::useCustomFalseColor())
 			{
 				pCurrentMaterial = m_SelectionMaterialHash.value(pCurrentGroup->id());
@@ -1565,7 +1566,7 @@ void GLC_Mesh::primitiveRenderLoop(const GLC_RenderProperties& renderProperties,
 	while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
 	{
 		GLC_PrimitiveGroup* pCurrentGroup= iGroup.value();
-		GLC_Material* pCurrentMaterial = nullptr;
+		GLC_Material* pCurrentMaterial = NULL;
 		if (GLC_State::isInSelectionMode() && GLC_State::useCustomFalseColor())
 		{
 			pCurrentMaterial = m_SelectionMaterialHash.value(pCurrentGroup->id());
@@ -1599,7 +1600,7 @@ void GLC_Mesh::primitiveSelectedRenderLoop(const GLC_RenderProperties& renderPro
 	while (iGroup != m_PrimitiveGroups.value(m_CurrentLod)->constEnd())
 	{
 		GLC_PrimitiveGroup* pCurrentGroup= iGroup.value();
-		GLC_Material* pCurrentMaterial = nullptr;
+		GLC_Material* pCurrentMaterial = NULL;
 		if (GLC_State::isInSelectionMode() && GLC_State::useCustomFalseColor())
 		{
 
