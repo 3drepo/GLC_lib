@@ -37,6 +37,7 @@
 #include "viewport/glc_panmover.h"
 #include "viewport/glc_zoommover.h"
 #include "viewport/glc_settargetmover.h"
+#include "viewport/glc_helicoptermover.h"
 #include "viewport/glc_trackballmover.h"
 #include "viewport/glc_turntablemover.h"
 #include "viewport/glc_repcrossmover.h"
@@ -435,6 +436,18 @@ GLC_MoverController GLC_Factory::createDefaultMoverController(const QColor& colo
 	pMover= new GLC_TsrMover(pViewport);
 	// Add the Turn Table Mover to the controller
 	defaultController.addMover(pMover, GLC_MoverController::TSR);
+
+	//////////////////////////////////////////////////////////////////////
+	// Translation, rotation and scaling Mover
+	//////////////////////////////////////////////////////////////////////
+	// Create the Helicopter Mover
+	pMover = new GLC_HelicopterMover(pViewport, true);
+	// Add the Helicopter Mover (Horizontal) to the controller
+	defaultController.addMover(pMover, GLC_MoverController::HelicopterF);
+
+	pMover = new GLC_HelicopterMover(pViewport, false);
+	// Add the Helicopter Mover (Vertical) to the controller
+	defaultController.addMover(pMover, GLC_MoverController::HelicopterV);
 
 	return defaultController;
 }

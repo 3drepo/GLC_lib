@@ -57,7 +57,9 @@ public:
 		Target= 4,
 		TurnTable= 5,
 		Fly= 6,
-		TSR= 7
+		TSR= 7,
+		HelicopterF = 8,
+		HelicopterV = 9
 	};
 
 public:
