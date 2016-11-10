@@ -27,7 +27,11 @@
 
 #include "glc_mover.h"
 
+#include <glc_boundingbox.h>
 #include "../glc_config.h"
+
+#include <iostream>
+#include <sstream>
 
 //////////////////////////////////////////////////////////////////////
 //! \class GLC_HelicopterMover
@@ -67,6 +71,11 @@ public:
 
 	//! Ends this mover
 	virtual void ends();
+
+    void setBoundingBox(const GLC_BoundingBox &bbox) 
+	{
+		m_DistanceFactor = (bbox.xLength() + bbox.yLength() + bbox.zLength()) / 3.0 * -0.00001;
+	};
 //@}
 
 protected:

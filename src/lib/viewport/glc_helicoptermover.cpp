@@ -92,12 +92,12 @@ bool GLC_HelicopterMover::move(const GLC_UserInput& userInput)
 	return true;
 }
 
+
+
 void GLC_HelicopterMover::timerEvent(QTimerEvent*)
 {
 
      GLC_Camera* cam = m_pViewport->cameraHandle();
-
-
 	 GLC_Point3d eye = cam->eye();
 	 GLC_Point3d target = cam->target();
 	 GLC_Vector3d up = GLC_Vector3d(0, 1, 0);
