@@ -98,10 +98,10 @@ void GLC_HelicopterMover::timerEvent(QTimerEvent*)
      GLC_Camera* cam = m_pViewport->cameraHandle();
 
 
-	 auto eye = cam->eye();
-	 auto target = cam->target();
-	 auto up = GLC_Vector3d(0, 1, 0);
-	 auto forward = cam->forward();
+	 GLC_Point3d eye = cam->eye();
+	 GLC_Point3d target = cam->target();
+	 GLC_Vector3d up = GLC_Vector3d(0, 1, 0);
+	 GLC_Vector3d forward = cam->forward();
 	 GLC_Vector3d increment;
 	 if (m_MoveForward)
 	 {
@@ -124,7 +124,7 @@ void GLC_HelicopterMover::timerEvent(QTimerEvent*)
 		 //diff x is actually a pan, not a rotation in this case
 		 double panFactor = m_VecDiff.x() * m_DistanceFactor;
 
-		 auto normal = up ^ forward;
+		 GLC_Vector3d normal = up ^ forward;
 		 normal = normal.normalize();
 		 normal.setY(0);
 
@@ -134,8 +134,8 @@ void GLC_HelicopterMover::timerEvent(QTimerEvent*)
 		 
 	 }
     
-	auto newTar = target + increment;
-	auto newEye = eye + increment;
+	GLC_Point3d newTar = target + increment;
+	GLC_Point3d newEye = eye + increment;
     cam->setTargetCam(newTar);
     cam->setEyeCam(newEye);
 	cam->setUpCam(GLC_Vector3d(0, 1, 0));
