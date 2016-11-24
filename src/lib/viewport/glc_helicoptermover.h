@@ -71,7 +71,9 @@ public:
 
     void setBoundingBox(const GLC_BoundingBox &bbox) 
 	{
-		m_DistanceFactor = (bbox.xLength() + bbox.yLength() + bbox.zLength()) / 3.0 * -0.00001;
+		auto maxL = bbox.xLength() > bbox.yLength() ? bbox.xLength() : bbox.yLength();
+		maxL = maxL > bbox.zLength() ? maxL : bbox.zLength();
+		m_DistanceFactor = sqrt(maxL) * 0.03;
 	};
 //@}
 
