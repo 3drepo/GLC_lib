@@ -30,9 +30,6 @@
 #include <glc_boundingbox.h>
 #include "../glc_config.h"
 
-#include <iostream>
-#include <sstream>
-
 //////////////////////////////////////////////////////////////////////
 //! \class GLC_HelicopterMover
 /*! \brief GLC_HelicopterMover : Panoramic interactive manipulation */
