@@ -31,7 +31,7 @@ GLC_HelicopterMover::GLC_HelicopterMover(GLC_Viewport* pViewport, const bool for
 	: GLC_Mover(pViewport, repsList)
     ,m_TimerInterval(0)
 	,m_TimerId(0)
-	,m_RotationFactor(-0.000005)
+    ,m_RotationFactor(-5e-3)
 	, m_DistanceFactor(-0.0001)
 	, m_MoveForward(forwardDir)
 {
@@ -89,6 +89,8 @@ bool GLC_HelicopterMover::move(const GLC_UserInput& userInput)
 {
     const GLC_Point2d currCord(userInput.x(), userInput.y());
 	m_VecDiff = currCord - m_startingCoord;	// moving Vector 
+	m_VecDiff.setX(m_VecDiff.x() / m_pViewport->viewHSize());
+	m_VecDiff.setY(m_VecDiff.y() / m_pViewport->viewVSize());
 	return true;
 }
 
@@ -103,10 +105,17 @@ void GLC_HelicopterMover::timerEvent(QTimerEvent*)
 	 GLC_Vector3d up = GLC_Vector3d(0, 1, 0);
 	 GLC_Vector3d forward = cam->forward();
 	 GLC_Vector3d increment;
+
+	 auto diffX = m_VecDiff.x();
+	 auto diffY = m_VecDiff.y();
+
+	 diffX = (diffX < 0 ? -1. : 1.) * diffX *diffX;
+	 diffY = (diffY < 0 ? -1. : 1.) * diffY *diffY;
+
 	 if (m_MoveForward)
 	 {
 		 //Rotation first
-		 double angle = m_VecDiff.x() * m_RotationFactor;
+		 double angle = diffX * m_RotationFactor;
 
 		 const GLC_Matrix4x4 rotationMatrix(up, angle);
 
@@ -117,12 +126,12 @@ void GLC_HelicopterMover::timerEvent(QTimerEvent*)
 		 increment.setY(0);
 
 		 increment = increment.normalize();
-		 increment = increment * m_VecDiff.y() * m_DistanceFactor;
+		 increment = increment * diffY * -m_DistanceFactor;
 	 }
 	 else
 	 {
 		 //diff x is actually a pan, not a rotation in this case
-		 double panFactor = m_VecDiff.x() * m_DistanceFactor;
+		 double panFactor = diffX * m_DistanceFactor;
 
 		 GLC_Vector3d normal = up ^ forward;
 		 normal = normal.normalize();
@@ -130,7 +139,7 @@ void GLC_HelicopterMover::timerEvent(QTimerEvent*)
 
 		 increment = normal * panFactor;
 
-		 increment = increment + up * m_VecDiff.y() * m_DistanceFactor;
+		 increment = increment + up * diffY * -m_DistanceFactor;
 		 
 	 }
     
