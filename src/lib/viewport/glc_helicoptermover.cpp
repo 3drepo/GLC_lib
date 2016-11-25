@@ -131,7 +131,7 @@ void GLC_HelicopterMover::timerEvent(QTimerEvent*)
 	 else
 	 {
 		 //diff x is actually a pan, not a rotation in this case
-		 double panFactor = diffX * m_DistanceFactor;
+         double panFactor = diffX * -m_DistanceFactor;
 
 		 GLC_Vector3d normal = up ^ forward;
 		 normal = normal.normalize();
